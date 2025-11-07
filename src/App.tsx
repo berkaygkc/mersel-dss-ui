@@ -1,43 +1,35 @@
-import { useState } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { queryClient } from '@/lib/query-client';
+import { TopbarLayout } from '@/components/layout/topbar-layout';
+import { Dashboard } from '@/pages/dashboard';
+import { PDFSignPage } from '@/pages/pdf-sign';
+import { XMLSignPage } from '@/pages/xml-sign';
+import { SOAPSignPage } from '@/pages/soap-sign';
+import { TimestampPage } from '@/pages/timestamp';
+import { TubitakPage } from '@/pages/tubitak';
+import { CertificatesPage } from '@/pages/certificates';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8">
-        <div className="text-center space-y-6">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold text-slate-900">
-              🔐 Sign API
-            </h1>
-            <p className="text-lg text-slate-600">
-              Dijital İmza Yönetim Arayüzü
-            </p>
-          </div>
-
-          <div className="bg-slate-50 rounded-xl p-6 space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm text-slate-500">Test Counter</p>
-              <button
-                onClick={() => setCount((count) => count + 1)}
-                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-              >
-                Count is {count}
-              </button>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-slate-200">
-            <p className="text-sm text-slate-500">
-              🚀 React + Vite + TypeScript + Tailwind + shadcn/ui
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<TopbarLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="pdf-sign" element={<PDFSignPage />} />
+            <Route path="xml-sign" element={<XMLSignPage />} />
+            <Route path="soap-sign" element={<SOAPSignPage />} />
+            <Route path="timestamp" element={<TimestampPage />} />
+            <Route path="tubitak" element={<TubitakPage />} />
+            <Route path="certificates" element={<CertificatesPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
 }
 
-export default App
-
+export default App;
