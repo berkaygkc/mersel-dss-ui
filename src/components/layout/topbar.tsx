@@ -1,16 +1,15 @@
-import { Link, useLocation } from 'react-router-dom';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { Badge } from '@/components/ui/badge';
+import { useTimestampStatus } from '@/hooks/use-timestamp';
+import { cn } from '@/lib/utils';
 import {
   Clock,
   CreditCard,
-  ShieldCheck,
   LayoutDashboard,
   PenTool,
+  ShieldCheck,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { useTubitakCredit } from '@/hooks/use-certificates';
-import { useTimestampStatus } from '@/hooks/use-timestamp';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { Link, useLocation } from 'react-router-dom';
 
 const navigation = [
   { name: 'Ana Sayfa', href: '/', icon: LayoutDashboard },
@@ -22,7 +21,6 @@ const navigation = [
 
 export function Topbar() {
   const location = useLocation();
-  const { data: creditData } = useTubitakCredit();
   const { data: timestampData } = useTimestampStatus();
 
   return (

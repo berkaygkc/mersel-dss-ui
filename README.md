@@ -22,10 +22,18 @@ Modern, responsive dijital imza yönetim arayüzü.
 ## 🛠️ Setup
 
 ```bash
-# Install dependencies
+# 1. Install dependencies
 yarn install
 
-# Start dev server
+# 2. Configure environment variables
+cp .env.example .env
+# Edit .env if needed (default: http://localhost:8085)
+
+# 3. Generate API client from backend
+yarn generate-api
+# Note: Backend API must be running on http://localhost:8085
+
+# 4. Start dev server
 yarn dev
 ```
 
@@ -47,14 +55,32 @@ yarn generate-api     # Generate TypeScript client from OpenAPI spec
 
 ## 🌐 Environment Variables
 
-### `.env.development`
+Environment variables dosyasını oluşturun:
+
+```bash
+cp .env.example .env
 ```
+
+### Local Development (`.env`)
+```env
+# Backend API URL
 VITE_API_URL=http://localhost:8085
 ```
 
-### `.env.production`
-```
+### Production (`.env.production`)
+```env
+# Production API URL
 VITE_API_URL=https://api.yourdomain.com
+```
+
+### TypeScript Type Definitions
+
+Environment variable'lar için TypeScript tip tanımları `src/vite-env.d.ts` dosyasında bulunur:
+
+```typescript
+interface ImportMetaEnv {
+  readonly VITE_API_URL: string;
+}
 ```
 
 ## 📁 Project Structure
@@ -62,18 +88,33 @@ VITE_API_URL=https://api.yourdomain.com
 ```
 sign-ui/
 ├── src/
-│   ├── api/              # Auto-generated OpenAPI client
+│   ├── api/
+│   │   └── generated/    # 🤖 Auto-generated OpenAPI client (DO NOT EDIT)
 │   ├── components/
 │   │   ├── ui/           # shadcn/ui components
 │   │   ├── layout/       # Layout components
-│   │   └── sign/         # Sign-specific components
+│   │   └── theme/        # Theme components
 │   ├── pages/            # Page components
+│   │   ├── dashboard.tsx
+│   │   ├── signing.tsx
+│   │   ├── timestamp.tsx
+│   │   ├── certificates.tsx
+│   │   └── tubitak.tsx
 │   ├── hooks/            # Custom React hooks
+│   │   ├── use-sign.ts
+│   │   ├── use-timestamp.ts
+│   │   └── use-certificates.ts
 │   ├── lib/              # Utilities
+│   │   ├── api-config.ts     # API client configuration
+│   │   ├── query-client.ts   # React Query setup
+│   │   └── utils.ts          # Helper functions
+│   ├── vite-env.d.ts     # Vite + custom environment types
 │   ├── App.tsx           # Root component
 │   ├── main.tsx          # Entry point
 │   └── index.css         # Global styles
 ├── public/               # Static assets
+├── .env.example          # Environment variables template
+├── .env                  # Local environment (gitignored)
 ├── index.html            # HTML template
 ├── vite.config.ts        # Vite configuration
 ├── tailwind.config.js    # Tailwind configuration
@@ -126,5 +167,6 @@ Backend API endpoints:
 ---
 
 **Note**: This is the frontend for the Sign API project. Make sure the backend is running before starting development.
+
 
 

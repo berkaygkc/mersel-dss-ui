@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -24,7 +23,7 @@ export function TimestampPage() {
 
   const getTimestamp = useGetTimestamp();
   const validateTimestamp = useValidateTimestamp();
-  const { data: statusData, isLoading: statusLoading } = useTimestampStatus();
+  const { data: statusData } = useTimestampStatus();
 
   const handleGetTimestamp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,6 +133,7 @@ export function TimestampPage() {
         </Card>
       )}
 
+     {statusData?.available && <>
       {/* Info Card - Moved to top */}
       <Card className="border-blue-500/50">
         <CardHeader>
@@ -284,7 +284,7 @@ export function TimestampPage() {
           </Card>
 
         </div>
-      </div>
+      </div></>}
 
       {/* Validation Results Modal */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

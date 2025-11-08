@@ -1,19 +1,19 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCertificates, useKeystoreInfo } from '@/hooks/use-certificates';
-import { ShieldCheck, RefreshCw, Key, AlertCircle, Calendar, CheckCircle2, XCircle, ChevronDown } from 'lucide-react';
+import { AlertCircle, Calendar, CheckCircle2, Key, RefreshCw, ShieldCheck, XCircle } from 'lucide-react';
 
 export function CertificatesPage() {
   const { data: certResponse, isLoading: certLoading, error: certError, refetch: refetchCerts, isRefetching: certRefetching } = useCertificates();
-  const { data: keystoreInfo, isLoading: keystoreLoading, refetch: refetchKeystore, isRefetching: keystoreRefetching } = useKeystoreInfo();
+  const { data: keystoreInfo, refetch: refetchKeystore, isRefetching: keystoreRefetching } = useKeystoreInfo();
 
   const certificates = certResponse?.certificates || [];
   const keystoreType = certResponse?.keystoreType || 'N/A';
@@ -436,7 +436,7 @@ export function CertificatesPage() {
             <div className="grid gap-4 md:grid-cols-2">
               {Object.entries(keystoreInfo).map(([key, value]) => {
                 // Skip empty values
-                if (value === null || value === undefined || value === '') return null;
+                if (value === null || value === undefined) return null;
                 
                 // Türkçe label mapping
                 const labelMap: Record<string, string> = {

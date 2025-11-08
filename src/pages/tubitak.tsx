@@ -1,6 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTubitakCredit } from '@/hooks/use-certificates';
 import { CreditCard, RefreshCw, AlertCircle, TrendingUp, Info, AlertTriangle } from 'lucide-react';
