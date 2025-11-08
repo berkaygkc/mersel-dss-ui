@@ -311,10 +311,6 @@ export function SigningPage() {
                   <div className="flex flex-wrap gap-2 mt-4">
                     <Badge variant="outline" className="gap-1">
                       <CheckCircle2 className="h-3 w-3" />
-                      ETSI EN 319 142
-                    </Badge>
-                    <Badge variant="outline" className="gap-1">
-                      <CheckCircle2 className="h-3 w-3" />
                       Görsel İmza
                     </Badge>
                     <Badge variant="outline" className="gap-1">
