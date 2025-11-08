@@ -78,13 +78,6 @@ export function Topbar() {
               </Badge>
             )}
 
-            {/* Credit */}
-            {creditData && creditData.remainingCredit !== undefined && (
-              <Badge variant="secondary" className="hidden sm:inline-flex">
-                <CreditCard className="mr-1 h-3 w-3" />
-                {creditData.remainingCredit}
-              </Badge>
-            )}
 
             {/* Theme Toggle */}
             <div className="hidden md:flex">

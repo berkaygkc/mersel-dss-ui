@@ -4,14 +4,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useGetTimestamp, useValidateTimestamp, useTimestampStatus } from '@/hooks/use-timestamp';
-import { Loader2, Clock, Activity, CheckCircle2 } from 'lucide-react';
+import { Loader2, Clock, Activity, CheckCircle2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function TimestampPage() {
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [timestampFile, setTimestampFile] = useState<File | null>(null);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const getTimestamp = useGetTimestamp();
   const validateTimestamp = useValidateTimestamp();
@@ -24,7 +33,7 @@ export function TimestampPage() {
     try {
       const result = await getTimestamp.mutateAsync({ document: documentFile });
       
-      // Auto-download timestamp
+      // Auto-download timestamp (result is ArrayBuffer)
       const blob = new Blob([result], { type: 'application/octet-stream' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -53,23 +62,13 @@ export function TimestampPage() {
     if (!timestampFile) return;
 
     try {
-      const result = await validateTimestamp.mutateAsync({
+      await validateTimestamp.mutateAsync({
         timestampToken: timestampFile,
         originalDocument: originalFile || undefined,
       });
       
-      // Success/Error toast based on validation result
-      if (result.valid) {
-        toast.success('Timestamp Geçerli!', {
-          description: result.timestamp ? 
-            `Zaman damgası doğrulandı: ${new Date(result.timestamp).toLocaleString('tr-TR')}` :
-            'Zaman damgası geçerli.',
-        });
-      } else {
-        toast.error('Timestamp Geçersiz!', {
-          description: result.message || 'Zaman damgası doğrulanamadı.',
-        });
-      }
+      // Open modal to show results
+      setIsDialogOpen(true);
     } catch (error) {
       // Error toast
       toast.error('Doğrulama Hatası!', {
@@ -96,27 +95,79 @@ export function TimestampPage() {
         </p>
       </div>
 
-      {/* Service Status */}
-      <Card>
+      {/* Service Status - Only show if NOT active */}
+      {statusData && !statusData.available && (
+        <Card className="border-orange-500/60 bg-orange-500/5 dark:bg-orange-500/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+              <Activity className="h-5 w-5" />
+              Timestamp Servisi Aktif Değil
+            </CardTitle>
+            <CardDescription>
+              Zaman damgası servisi şu anda kullanılamıyor
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <p className="text-sm text-foreground/80">
+                {statusData.status || 'Timestamp servisi yapılandırılmamış veya erişilemiyor.'}
+              </p>
+              <div className="rounded-lg border border-orange-500/40 bg-background p-3">
+                <p className="text-xs font-medium text-foreground/60 mb-1.5">Yapılması Gerekenler:</p>
+                <ul className="space-y-1.5 text-xs text-foreground/80">
+                  <li className="flex items-center gap-2">
+                    <span className="text-orange-500">•</span>
+                    Backend'de TS_SERVER_HOST ayarını kontrol edin
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-orange-500">•</span>
+                    TÜBİTAK ESYA kontörünüzü kontrol edin
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-orange-500">•</span>
+                    Backend loglarını inceleyin
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Info Card - Moved to top */}
+      <Card className="border-blue-500/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Timestamp Servis Durumu
+            <Clock className="h-5 w-5 text-blue-500" />
+            RFC 3161 Timestamp Hakkında
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {statusLoading ? (
-            <p className="text-sm text-muted-foreground">Yükleniyor...</p>
-          ) : statusData ? (
-            <div className="flex items-center gap-4">
-              <Badge variant={statusData.available ? 'success' : 'destructive'}>
-                {statusData.available ? 'Aktif' : 'Kapalı'}
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Bir belgenin belirli bir zamanda var olduğunu kanıtlayan güvenilir bir
+              zaman işaretidir. RFC 3161 standardına uygun zaman damgaları, dijital 
+              imzalı belgelerin yasal geçerliliğini artırır.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary" className="gap-1.5 px-3 py-1">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                RFC 3161 Uyumlu
               </Badge>
-              <p className="text-sm text-muted-foreground">{statusData.status}</p>
+              <Badge variant="secondary" className="gap-1.5 px-3 py-1">
+                <Clock className="h-3.5 w-3.5" />
+                Zaman Kaydı
+              </Badge>
+              <Badge variant="secondary" className="gap-1.5 px-3 py-1">
+                <Activity className="h-3.5 w-3.5" />
+                Yasal Geçerlilik
+              </Badge>
+              <Badge variant="secondary" className="gap-1.5 px-3 py-1">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                TÜBİTAK ESYA
+              </Badge>
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Durum bilgisi alınamadı</p>
-          )}
+          </div>
         </CardContent>
       </Card>
 
@@ -232,85 +283,197 @@ export function TimestampPage() {
             </CardContent>
           </Card>
 
-          {/* Validation Result Details */}
-          {validateTimestamp.isSuccess && validateTimestamp.data && (
-            <Card className={validateTimestamp.data.valid ? 'border-green-500/50' : 'border-destructive/50'}>
-              <CardHeader>
-                <CardTitle className={validateTimestamp.data.valid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}>
-                  {validateTimestamp.data.valid ? '✓ Geçerli Timestamp' : '✗ Geçersiz Timestamp'}
-                </CardTitle>
-                <CardDescription>Doğrulama detayları</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid gap-3 text-sm">
+        </div>
+      </div>
+
+      {/* Validation Results Modal */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] [&>button]:hidden p-0 gap-0">
+          {validateTimestamp.data && (
+            <div className="flex flex-col max-h-[85vh]">
+              {/* Header - Fixed */}
+              <div className="flex-shrink-0 p-6 border-b relative">
+                {/* Close Button - Top Right */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsDialogOpen(false)}
+                  className="absolute right-6 top-6 h-8 w-8 rounded-full z-10"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+
+                <DialogHeader>
+                  <DialogTitle className={`flex items-center gap-2 text-xl pr-12 ${validateTimestamp.data.valid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                    {validateTimestamp.data.valid ? (
+                      <>
+                        <CheckCircle2 className="h-6 w-6" />
+                        Geçerli Timestamp
+                      </>
+                    ) : (
+                      <>
+                        <Activity className="h-6 w-6" />
+                        Geçersiz Timestamp
+                      </>
+                    )}
+                  </DialogTitle>
+                  <DialogDescription className="text-base">
+                    {validateTimestamp.data.valid 
+                      ? 'Zaman damgası başarıyla doğrulandı ve geçerli'
+                      : 'Zaman damgası doğrulanamadı veya geçersiz'}
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
+
+              {/* Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="space-y-4">
+                {/* Timestamp Info Grid */}
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {validateTimestamp.data.timestamp && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Tarih:</span>
-                      <span className="font-medium">{new Date(validateTimestamp.data.timestamp).toLocaleString('tr-TR')}</span>
-                    </div>
-                  )}
-                  {validateTimestamp.data.tsaName && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">TSA:</span>
-                      <span className="font-mono text-xs">{validateTimestamp.data.tsaName}</span>
-                    </div>
-                  )}
-                  {validateTimestamp.data.hashAlgorithm && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Hash:</span>
-                      <span className="font-medium">{validateTimestamp.data.hashAlgorithm}</span>
+                    <div className="rounded-lg border border-border bg-muted/30 p-3">
+                      <p className="text-xs font-medium text-foreground/60 mb-1.5">Zaman Damgası</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {new Date(validateTimestamp.data.timestamp).toLocaleString('tr-TR', {
+                          dateStyle: 'full',
+                          timeStyle: 'medium'
+                        })}
+                      </p>
                     </div>
                   )}
                   {validateTimestamp.data.serialNumber && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Seri No:</span>
-                      <span className="font-mono text-xs">{validateTimestamp.data.serialNumber}</span>
+                    <div className="rounded-lg border border-border bg-muted/30 p-3">
+                      <p className="text-xs font-medium text-foreground/60 mb-1.5">Seri Numarası</p>
+                      <p className="text-sm font-mono font-semibold text-foreground break-all">{validateTimestamp.data.serialNumber}</p>
+                    </div>
+                  )}
+                  {validateTimestamp.data.hashAlgorithm && (
+                    <div className="rounded-lg border border-border bg-muted/30 p-3">
+                      <p className="text-xs font-medium text-foreground/60 mb-1.5">Hash Algoritması</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {validateTimestamp.data.hashAlgorithm}
+                      </p>
+                      {validateTimestamp.data.hashAlgorithmOid && (
+                        <p className="text-xs font-mono text-foreground/40 mt-1.5">
+                          {validateTimestamp.data.hashAlgorithmOid}
+                        </p>
+                      )}
                     </div>
                   )}
                   {validateTimestamp.data.signatureAlgorithm && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">İmza Algoritması:</span>
-                      <span className="font-medium">{validateTimestamp.data.signatureAlgorithm}</span>
+                    <div className="rounded-lg border border-border bg-muted/30 p-3">
+                      <p className="text-xs font-medium text-foreground/60 mb-1.5">İmza Algoritması</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {validateTimestamp.data.signatureAlgorithm}
+                      </p>
+                      {validateTimestamp.data.signatureAlgorithmOid && (
+                        <p className="text-xs font-mono text-foreground/40 mt-1.5">
+                          {validateTimestamp.data.signatureAlgorithmOid}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {validateTimestamp.data.nonce && (
+                    <div className="rounded-lg border border-border bg-muted/30 p-3">
+                      <p className="text-xs font-medium text-foreground/60 mb-1.5">Nonce</p>
+                      <p className="text-sm font-mono text-xs font-semibold text-foreground break-all">{validateTimestamp.data.nonce}</p>
+                    </div>
+                  )}
+                  {typeof validateTimestamp.data.certificateValid !== 'undefined' && (
+                    <div className="rounded-lg border border-border bg-muted/30 p-3">
+                      <p className="text-xs font-medium text-foreground/60 mb-1.5">TSA Sertifika Durumu</p>
+                      <p className={`text-sm font-semibold ${validateTimestamp.data.certificateValid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                        {validateTimestamp.data.certificateValid ? '✓ Geçerli' : '✗ Geçersiz/Süresi Dolmuş'}
+                      </p>
                     </div>
                   )}
                 </div>
+
+                {/* TSA Information */}
+                {validateTimestamp.data.tsaName && (
+                  <div className="rounded-lg border border-border bg-muted/20 p-4">
+                    <p className="text-xs font-bold text-foreground mb-2">Zaman Damgası Otoritesi (TSA)</p>
+                    <p className="text-sm font-mono text-foreground/90 break-all">{validateTimestamp.data.tsaName}</p>
+                    {(validateTimestamp.data.certificateNotBefore || validateTimestamp.data.certificateNotAfter) && (
+                      <div className="mt-3 grid gap-2 md:grid-cols-2 text-xs">
+                        {validateTimestamp.data.certificateNotBefore && (
+                          <div>
+                            <span className="font-medium text-foreground/60">Geçerlilik Başlangıcı: </span>
+                            <span className="font-semibold text-foreground">
+                              {new Date(validateTimestamp.data.certificateNotBefore).toLocaleDateString('tr-TR')}
+                            </span>
+                          </div>
+                        )}
+                        {validateTimestamp.data.certificateNotAfter && (
+                          <div>
+                            <span className="font-medium text-foreground/60">Geçerlilik Bitişi: </span>
+                            <span className="font-semibold text-foreground">
+                              {new Date(validateTimestamp.data.certificateNotAfter).toLocaleDateString('tr-TR')}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Hash Verification Status */}
+                {typeof validateTimestamp.data.hashVerified !== 'undefined' && validateTimestamp.data.hashVerified !== null && (
+                  <div className={`rounded-lg border-2 p-4 ${validateTimestamp.data.hashVerified ? 'border-green-500/60 bg-green-500/5 dark:bg-green-500/10' : 'border-red-500/60 bg-red-500/5 dark:bg-red-500/10'}`}>
+                    <p className={`text-sm font-bold mb-1.5 flex items-center gap-2 ${validateTimestamp.data.hashVerified ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {validateTimestamp.data.hashVerified ? (
+                        <>
+                          <CheckCircle2 className="h-4 w-4" />
+                          Hash Doğrulaması Başarılı
+                        </>
+                      ) : (
+                        <>
+                          <X className="h-4 w-4" />
+                          Hash Doğrulaması Başarısız
+                        </>
+                      )}
+                    </p>
+                    <p className="text-sm text-foreground/90 leading-relaxed">
+                      {validateTimestamp.data.hashVerified 
+                        ? 'Orijinal belgenin hash değeri timestamp token içindeki hash ile eşleşiyor.'
+                        : 'Orijinal belgenin hash değeri eşleşmiyor - belge değiştirilmiş olabilir.'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Errors */}
                 {validateTimestamp.data.errors && validateTimestamp.data.errors.length > 0 && (
-                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3">
-                    <p className="text-sm font-semibold text-destructive mb-2">Hatalar:</p>
-                    <ul className="list-inside list-disc space-y-1 text-xs text-muted-foreground">
+                  <div className="rounded-lg border-2 border-orange-500/60 bg-orange-500/5 dark:bg-orange-500/10 p-4">
+                    <p className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-3 flex items-center gap-2">
+                      <Activity className="h-4 w-4" />
+                      Doğrulama Hataları
+                    </p>
+                    <ul className="space-y-2">
                       {validateTimestamp.data.errors.map((error, idx) => (
-                        <li key={idx}>{error}</li>
+                        <li key={idx} className="flex items-start gap-2 text-sm text-foreground/90">
+                          <span className="text-orange-600 dark:text-orange-400 mt-0.5 font-bold">•</span>
+                          <span>{error}</span>
+                        </li>
                       ))}
                     </ul>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          )}
 
-          {/* Info Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>RFC 3161 Timestamp</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>
-                <strong>Zaman Damgası Nedir?</strong>
-              </p>
-              <p>
-                Bir belgenin belirli bir zamanda var olduğunu kanıtlayan güvenilir bir
-                zaman işaretidir.
-              </p>
-              <ul className="mt-3 list-inside list-disc space-y-1">
-                <li>RFC 3161 standardına uygun</li>
-                <li>Dijital imzalarda zaman kaydı</li>
-                <li>Yasal geçerlilik</li>
-                <li>TÜBİTAK ESYA desteği</li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                {/* Success Message */}
+                {validateTimestamp.data.message && validateTimestamp.data.valid && (
+                  <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-3">
+                    <p className="text-sm font-semibold text-green-600 dark:text-green-400">
+                      {validateTimestamp.data.message}
+                    </p>
+                  </div>
+                )}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Accordion,
   AccordionContent,
@@ -104,40 +105,77 @@ export function CertificatesPage() {
 
       {/* Keystore Summary */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Keystore Tipi</CardTitle>
-            <Key className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{keystoreType}</div>
-            <p className="text-xs text-muted-foreground">Sertifika deposu türü</p>
-          </CardContent>
-        </Card>
+        {certLoading ? (
+          <>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-5 w-5 rounded" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-9 w-28 mb-3" />
+                <Skeleton className="h-4 w-full" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-5 w-36" />
+                <Skeleton className="h-5 w-5 rounded" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-9 w-16 mb-3" />
+                <Skeleton className="h-4 w-full" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-5 w-5 rounded" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-9 w-24 mb-3" />
+                <Skeleton className="h-4 w-full" />
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Keystore Tipi</CardTitle>
+                <Key className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{keystoreType}</div>
+                <p className="text-xs text-muted-foreground">Sertifika deposu türü</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Toplam Sertifika</CardTitle>
-            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{certificateCount}</div>
-            <p className="text-xs text-muted-foreground">Yüklü sertifika sayısı</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Toplam Sertifika</CardTitle>
+                <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{certificateCount}</div>
+                <p className="text-xs text-muted-foreground">Yüklü sertifika sayısı</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Durum</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {certResponse?.success ? '✓ Hazır' : '✗ Hata'}
-            </div>
-            <p className="text-xs text-muted-foreground">Sistem durumu</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Durum</CardTitle>
+                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {certResponse?.success ? '✓ Hazır' : '✗ Hata'}
+                </div>
+                <p className="text-xs text-muted-foreground">Sistem durumu</p>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Certificates List */}
@@ -158,8 +196,18 @@ export function CertificatesPage() {
         
         {certLoading ? (
           <Card>
-            <CardContent className="flex items-center justify-center py-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <Skeleton className="h-14 w-14 rounded-lg" />
+                <div className="flex-1 space-y-3">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-6 w-28" />
+                </div>
+              </div>
             </CardContent>
           </Card>
         ) : certError ? (
