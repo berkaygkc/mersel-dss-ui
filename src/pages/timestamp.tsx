@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { useGetTimestamp, useValidateTimestamp, useTimestampStatus } from '@/hooks/use-timestamp';
-import { Loader2, Clock, CheckCircle, AlertCircle, Activity, Download } from 'lucide-react';
+import { Loader2, Clock, Activity, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function TimestampPage() {
   const [documentFile, setDocumentFile] = useState<File | null>(null);
@@ -34,7 +34,16 @@ export function TimestampPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      
+      // Success toast
+      toast.success('Timestamp Başarılı!', {
+        description: `${documentFile.name}.tst dosyası oluşturuldu ve indiriliyor.`,
+      });
     } catch (error) {
+      // Error toast
+      toast.error('Timestamp Hatası!', {
+        description: (error as any)?.body?.message || (error as any)?.message || 'Zaman damgası alınırken bir hata oluştu.',
+      });
       console.error('Timestamp error:', error);
     }
   };
@@ -44,20 +53,45 @@ export function TimestampPage() {
     if (!timestampFile) return;
 
     try {
-      await validateTimestamp.mutateAsync({
+      const result = await validateTimestamp.mutateAsync({
         timestampToken: timestampFile,
         originalDocument: originalFile || undefined,
       });
+      
+      // Success/Error toast based on validation result
+      if (result.valid) {
+        toast.success('Timestamp Geçerli!', {
+          description: result.timestamp ? 
+            `Zaman damgası doğrulandı: ${new Date(result.timestamp).toLocaleString('tr-TR')}` :
+            'Zaman damgası geçerli.',
+        });
+      } else {
+        toast.error('Timestamp Geçersiz!', {
+          description: result.message || 'Zaman damgası doğrulanamadı.',
+        });
+      }
     } catch (error) {
+      // Error toast
+      toast.error('Doğrulama Hatası!', {
+        description: (error as any)?.body?.message || (error as any)?.message || 'Doğrulama sırasında bir hata oluştu.',
+      });
       console.error('Validation error:', error);
     }
   };
 
+  // Auto-clear previous states on unmount
+  useEffect(() => {
+    return () => {
+      getTimestamp.reset();
+      validateTimestamp.reset();
+    };
+  }, []);
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Timestamp (Zaman Damgası)</h1>
-        <p className="mt-2 text-slate-600">
+        <h1 className="text-3xl font-bold">Timestamp (Zaman Damgası)</h1>
+        <p className="mt-2 text-muted-foreground">
           Belgelere güvenilir zaman damgası ekleyin ve doğrulayın (RFC 3161)
         </p>
       </div>
@@ -72,16 +106,16 @@ export function TimestampPage() {
         </CardHeader>
         <CardContent>
           {statusLoading ? (
-            <p className="text-sm text-slate-600">Yükleniyor...</p>
+            <p className="text-sm text-muted-foreground">Yükleniyor...</p>
           ) : statusData ? (
             <div className="flex items-center gap-4">
               <Badge variant={statusData.available ? 'success' : 'destructive'}>
                 {statusData.available ? 'Aktif' : 'Kapalı'}
               </Badge>
-              <p className="text-sm text-slate-600">{statusData.status}</p>
+              <p className="text-sm text-muted-foreground">{statusData.status}</p>
             </div>
           ) : (
-            <p className="text-sm text-slate-600">Durum bilgisi alınamadı</p>
+            <p className="text-sm text-muted-foreground">Durum bilgisi alınamadı</p>
           )}
         </CardContent>
       </Card>
@@ -110,7 +144,7 @@ export function TimestampPage() {
                     required
                   />
                   {documentFile && (
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-muted-foreground">
                       Seçilen: {documentFile.name} ({(documentFile.size / 1024).toFixed(2)} KB)
                     </p>
                   )}
@@ -134,34 +168,6 @@ export function TimestampPage() {
             </CardContent>
           </Card>
 
-          {/* Get Timestamp Result */}
-          {getTimestamp.isSuccess && (
-            <Alert variant="success">
-              <CheckCircle className="h-4 w-4" />
-              <AlertTitle>Başarılı!</AlertTitle>
-              <AlertDescription>
-                <div className="mt-2 space-y-2">
-                  <p>Zaman damgası başarıyla oluşturuldu ve indirildi.</p>
-                  <div className="flex items-center gap-2">
-                    <Download className="h-4 w-4" />
-                    <span className="text-sm">.tst dosyası indiriliyor...</span>
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {getTimestamp.isError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Hata!</AlertTitle>
-              <AlertDescription>
-                {(getTimestamp.error as any)?.body?.message ||
-                  (getTimestamp.error as any)?.message ||
-                  'Zaman damgası alınırken bir hata oluştu.'}
-              </AlertDescription>
-            </Alert>
-          )}
         </div>
 
         {/* Validate Timestamp */}
@@ -169,7 +175,7 @@ export function TimestampPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
+                <CheckCircle2 className="h-5 w-5" />
                 Zaman Damgası Doğrula
               </CardTitle>
               <CardDescription>
@@ -188,7 +194,7 @@ export function TimestampPage() {
                     required
                   />
                   {timestampFile && (
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-muted-foreground">
                       Seçilen: {timestampFile.name}
                     </p>
                   )}
@@ -202,7 +208,7 @@ export function TimestampPage() {
                     onChange={(e) => setOriginalFile(e.target.files?.[0] || null)}
                   />
                   {originalFile && (
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-muted-foreground">
                       Seçilen: {originalFile.name}
                     </p>
                   )}
@@ -226,68 +232,60 @@ export function TimestampPage() {
             </CardContent>
           </Card>
 
-          {/* Validate Result */}
+          {/* Validation Result Details */}
           {validateTimestamp.isSuccess && validateTimestamp.data && (
-            <Alert variant={validateTimestamp.data.valid ? 'success' : 'destructive'}>
-              {validateTimestamp.data.valid ? (
-                <CheckCircle className="h-4 w-4" />
-              ) : (
-                <AlertCircle className="h-4 w-4" />
-              )}
-              <AlertTitle>
-                {validateTimestamp.data.valid ? 'Geçerli!' : 'Geçersiz!'}
-              </AlertTitle>
-              <AlertDescription>
-                <div className="mt-2 space-y-2 text-xs">
+            <Card className={validateTimestamp.data.valid ? 'border-green-500/50' : 'border-destructive/50'}>
+              <CardHeader>
+                <CardTitle className={validateTimestamp.data.valid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}>
+                  {validateTimestamp.data.valid ? '✓ Geçerli Timestamp' : '✗ Geçersiz Timestamp'}
+                </CardTitle>
+                <CardDescription>Doğrulama detayları</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid gap-3 text-sm">
                   {validateTimestamp.data.timestamp && (
-                    <p>
-                      <strong>Tarih:</strong>{' '}
-                      {new Date(validateTimestamp.data.timestamp).toLocaleString('tr-TR')}
-                    </p>
-                  )}
-                  {validateTimestamp.data.tsaName && (
-                    <p>
-                      <strong>TSA:</strong> {validateTimestamp.data.tsaName}
-                    </p>
-                  )}
-                  {validateTimestamp.data.hashAlgorithm && (
-                    <p>
-                      <strong>Hash:</strong> {validateTimestamp.data.hashAlgorithm}
-                    </p>
-                  )}
-                  {validateTimestamp.data.serialNumber && (
-                    <p>
-                      <strong>Seri No:</strong> {validateTimestamp.data.serialNumber}
-                    </p>
-                  )}
-                  {validateTimestamp.data.errors && validateTimestamp.data.errors.length > 0 && (
-                    <div className="mt-2">
-                      <strong>Hatalar:</strong>
-                      <ul className="list-inside list-disc">
-                        {validateTimestamp.data.errors.map((error, idx) => (
-                          <li key={idx}>{error}</li>
-                        ))}
-                      </ul>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Tarih:</span>
+                      <span className="font-medium">{new Date(validateTimestamp.data.timestamp).toLocaleString('tr-TR')}</span>
                     </div>
                   )}
-                  {validateTimestamp.data.message && (
-                    <p className="mt-2">{validateTimestamp.data.message}</p>
+                  {validateTimestamp.data.tsaName && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">TSA:</span>
+                      <span className="font-mono text-xs">{validateTimestamp.data.tsaName}</span>
+                    </div>
+                  )}
+                  {validateTimestamp.data.hashAlgorithm && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Hash:</span>
+                      <span className="font-medium">{validateTimestamp.data.hashAlgorithm}</span>
+                    </div>
+                  )}
+                  {validateTimestamp.data.serialNumber && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Seri No:</span>
+                      <span className="font-mono text-xs">{validateTimestamp.data.serialNumber}</span>
+                    </div>
+                  )}
+                  {validateTimestamp.data.signatureAlgorithm && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">İmza Algoritması:</span>
+                      <span className="font-medium">{validateTimestamp.data.signatureAlgorithm}</span>
+                    </div>
                   )}
                 </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {validateTimestamp.isError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Hata!</AlertTitle>
-              <AlertDescription>
-                {(validateTimestamp.error as any)?.body?.message ||
-                  (validateTimestamp.error as any)?.message ||
-                  'Doğrulama sırasında bir hata oluştu.'}
-              </AlertDescription>
-            </Alert>
+                {validateTimestamp.data.errors && validateTimestamp.data.errors.length > 0 && (
+                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3">
+                    <p className="text-sm font-semibold text-destructive mb-2">Hatalar:</p>
+                    <ul className="list-inside list-disc space-y-1 text-xs text-muted-foreground">
+                      {validateTimestamp.data.errors.map((error, idx) => (
+                        <li key={idx}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
 
           {/* Info Card */}
@@ -295,7 +293,7 @@ export function TimestampPage() {
             <CardHeader>
               <CardTitle>RFC 3161 Timestamp</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm text-slate-600">
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
               <p>
                 <strong>Zaman Damgası Nedir?</strong>
               </p>

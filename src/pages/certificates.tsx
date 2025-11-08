@@ -1,8 +1,14 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { useCertificates, useKeystoreInfo } from '@/hooks/use-certificates';
-import { ShieldCheck, RefreshCw, Key, AlertCircle, Calendar, CheckCircle2, XCircle } from 'lucide-react';
+import { ShieldCheck, RefreshCw, Key, AlertCircle, Calendar, CheckCircle2, XCircle, ChevronDown } from 'lucide-react';
 
 export function CertificatesPage() {
   const { data: certResponse, isLoading: certLoading, error: certError, refetch: refetchCerts, isRefetching: certRefetching } = useCertificates();
@@ -13,6 +19,18 @@ export function CertificatesPage() {
   const certificateCount = certResponse?.certificateCount || 0;
   
   const isRefreshing = certRefetching || keystoreRefetching;
+  
+  // Keystore'da aktif olarak seçilen sertifikanın serial number'ı
+  const activeSerialNumber = keystoreInfo?.certificateSerialNumber as string | undefined;
+  
+  // Sertifikanın aktif olup olmadığını kontrol et
+  const isActiveCertificate = (cert: any) => {
+    if (!activeSerialNumber) return false;
+    // Hex veya Dec formatında eşleşme kontrolü
+    return cert.serialNumberHex === activeSerialNumber || 
+           cert.serialNumberDec === activeSerialNumber ||
+           cert.serialNumberHex?.toLowerCase() === activeSerialNumber?.toLowerCase();
+  };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
@@ -66,8 +84,8 @@ export function CertificatesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Sertifika Yönetimi</h1>
-          <p className="mt-2 text-slate-600">
+          <h1 className="text-3xl font-bold">Sertifika Yönetimi</h1>
+          <p className="mt-2 text-muted-foreground">
             Keystore'unuzdaki dijital sertifikaları görüntüleyin ve yönetin
           </p>
         </div>
@@ -124,110 +142,140 @@ export function CertificatesPage() {
 
       {/* Certificates List */}
       <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">Sertifika Listesi</h2>
+            <p className="text-sm text-muted-foreground">
+              Detayları görüntülemek için sertifikaya tıklayın
+            </p>
+          </div>
+          {certificates.length > 0 && (
+            <Badge variant="outline">
+              {certificates.length} Sertifika
+            </Badge>
+          )}
+        </div>
+        
         {certLoading ? (
           <Card>
             <CardContent className="flex items-center justify-center py-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-slate-400" />
+              <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
             </CardContent>
           </Card>
         ) : certError ? (
           <Card>
-            <CardContent className="py-12 text-center">
-              <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-              <p className="mt-4 font-medium text-red-800">Sertifikalar yüklenemedi</p>
-              <p className="mt-2 text-sm text-red-600">
-                {(certError as any)?.body?.message || (certError as any)?.message}
-              </p>
+            <CardContent className="p-6">
+              <div className="flex gap-3">
+                <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <p className="text-base font-semibold">Sertifikalar yüklenemedi</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {(certError as any)?.body?.message || (certError as any)?.message}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         ) : certificates.length > 0 ? (
-          certificates.map((cert, index) => {
-            const subjectParts = parseDN(cert.subject || '');
-            const issuerParts = parseDN(cert.issuer || '');
-            const expired = isExpired(cert.validTo);
-            const expiringSoon = isExpiringSoon(cert.validTo);
+          <Accordion type="single" collapsible className="space-y-4">
+            {certificates.map((cert, index) => {
+              const subjectParts = parseDN(cert.subject || '');
+              const issuerParts = parseDN(cert.issuer || '');
+              const expired = isExpired(cert.validTo);
+              const expiringSoon = isExpiringSoon(cert.validTo);
+              const isActive = isActiveCertificate(cert);
 
-            return (
-              <Card key={index} className="overflow-hidden">
-                {/* Header with status */}
-                <div className={`border-l-4 ${
-                  expired ? 'border-red-500 bg-red-50' : 
-                  expiringSoon ? 'border-orange-500 bg-orange-50' : 
-                  'border-green-500 bg-green-50'
-                }`}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4">
-                        <div className={`rounded-lg p-3 ${
-                          expired ? 'bg-red-100' : 
-                          expiringSoon ? 'bg-orange-100' : 
-                          'bg-green-100'
-                        }`}>
-                          <ShieldCheck className={`h-6 w-6 ${
-                            expired ? 'text-red-600' : 
-                            expiringSoon ? 'text-orange-600' : 
-                            'text-green-600'
-                          }`} />
+              return (
+                <AccordionItem key={index} value={`cert-${index}`} className="border-none">
+                  <Card className="overflow-hidden">
+                    {/* Header with status */}
+                    <div className={`border-l-4 ${
+                      expired ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 
+                      expiringSoon ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20' : 
+                      isActive ? 'border-green-500 bg-green-50 dark:bg-green-950/20' :
+                      'border-slate-500 bg-slate-50 dark:bg-slate-950/20'
+                    }`}>
+                      <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                        <div className="flex items-start justify-between w-full pr-4">
+                          <div className="flex items-start gap-4">
+                            <div className={`rounded-lg p-3 ${
+                              expired ? 'bg-red-100 dark:bg-red-950/50' : 
+                              expiringSoon ? 'bg-orange-100 dark:bg-orange-950/50' : 
+                              isActive ? 'bg-green-100 dark:bg-green-950/50' :
+                              'bg-slate-100 dark:bg-slate-800'
+                            }`}>
+                              <ShieldCheck className={`h-6 w-6 ${
+                                expired ? 'text-red-600 dark:text-red-400' : 
+                                expiringSoon ? 'text-orange-600 dark:text-orange-400' : 
+                                isActive ? 'text-green-600 dark:text-green-400' :
+                                'text-slate-600 dark:text-slate-400'
+                              }`} />
+                            </div>
+                            <div className="flex-1 text-left">
+                              <div className="text-lg font-semibold">
+                                {subjectParts.CN || 'Sertifika'}
+                              </div>
+                              <div className="mt-1 text-sm text-muted-foreground">
+                                Alias: <span className="font-mono font-medium">{cert.alias}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            {expired ? (
+                              <Badge variant="destructive" className="gap-1">
+                                <XCircle className="h-3 w-3" />
+                                Süresi Dolmuş
+                              </Badge>
+                            ) : expiringSoon ? (
+                              <Badge variant="destructive" className="gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                Yakında Dolacak
+                              </Badge>
+                            ) : isActive ? (
+                              <Badge variant="success" className="gap-1">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Aktif
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="gap-1">
+                                <XCircle className="h-3 w-3" />
+                                Pasif
+                              </Badge>
+                            )}
+                            {cert.hasPrivateKey && (
+                              <Badge variant="secondary" className="gap-1">
+                                <Key className="h-3 w-3" />
+                                Private Key
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <CardTitle className="text-xl">
-                            {subjectParts.CN || 'Sertifika'}
-                          </CardTitle>
-                          <CardDescription className="mt-1">
-                            Alias: <span className="font-mono font-medium">{cert.alias}</span>
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        {expired ? (
-                          <Badge variant="destructive" className="gap-1">
-                            <XCircle className="h-3 w-3" />
-                            Süresi Dolmuş
-                          </Badge>
-                        ) : expiringSoon ? (
-                          <Badge variant="destructive" className="gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            Yakında Dolacak
-                          </Badge>
-                        ) : (
-                          <Badge variant="success" className="gap-1">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Aktif
-                          </Badge>
-                        )}
-                        {cert.hasPrivateKey && (
-                          <Badge variant="secondary" className="gap-1">
-                            <Key className="h-3 w-3" />
-                            Private Key
-                          </Badge>
-                        )}
-                      </div>
+                      </AccordionTrigger>
                     </div>
-                  </CardHeader>
-                </div>
 
-                <CardContent className="pt-6">
+                    <AccordionContent>
+                      <CardContent className="pt-6">
                   <div className="space-y-6">
                     {/* Subject & Issuer */}
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <h4 className="text-sm font-semibold text-slate-900">📄 Subject (Konu)</h4>
-                        <div className="rounded-lg bg-slate-50 p-3 space-y-1">
+                        <h4 className="text-sm font-semibold">📄 Subject (Konu)</h4>
+                        <div className="rounded-lg bg-muted p-3 space-y-1">
                           {Object.entries(subjectParts).map(([key, value]) => (
                             <div key={key} className="flex gap-2 text-xs">
-                              <span className="font-medium text-slate-600 min-w-[60px]">{key}:</span>
-                              <span className="text-slate-900">{value}</span>
+                              <span className="font-medium text-muted-foreground min-w-[60px]">{key}:</span>
+                              <span className="text-foreground">{value}</span>
                             </div>
                           ))}
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="text-sm font-semibold text-slate-900">🏛️ Issuer (Veren)</h4>
-                        <div className="rounded-lg bg-slate-50 p-3 space-y-1">
+                        <h4 className="text-sm font-semibold">🏛️ Issuer (Veren)</h4>
+                        <div className="rounded-lg bg-muted p-3 space-y-1">
                           {Object.entries(issuerParts).map(([key, value]) => (
                             <div key={key} className="flex gap-2 text-xs">
-                              <span className="font-medium text-slate-600 min-w-[60px]">{key}:</span>
-                              <span className="text-slate-900">{value}</span>
+                              <span className="font-medium text-muted-foreground min-w-[60px]">{key}:</span>
+                              <span className="text-foreground">{value}</span>
                             </div>
                           ))}
                         </div>
@@ -236,34 +284,34 @@ export function CertificatesPage() {
 
                     {/* Serial Numbers & Dates */}
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                      <div className="rounded-lg border border-slate-200 bg-white p-3">
-                        <p className="text-xs text-slate-500">Seri No (Hex)</p>
-                        <p className="mt-1 font-mono text-sm font-medium text-slate-900">
+                      <div className="rounded-lg border bg-card p-3">
+                        <p className="text-xs text-muted-foreground">Seri No (Hex)</p>
+                        <p className="mt-1 font-mono text-sm font-medium">
                           {cert.serialNumberHex}
                         </p>
                       </div>
-                      <div className="rounded-lg border border-slate-200 bg-white p-3">
-                        <p className="text-xs text-slate-500">Seri No (Dec)</p>
-                        <p className="mt-1 font-mono text-sm font-medium text-slate-900">
+                      <div className="rounded-lg border bg-card p-3">
+                        <p className="text-xs text-muted-foreground">Seri No (Dec)</p>
+                        <p className="mt-1 font-mono text-sm font-medium">
                           {cert.serialNumberDec}
                         </p>
                       </div>
-                      <div className="rounded-lg border border-slate-200 bg-white p-3">
-                        <p className="flex items-center gap-1 text-xs text-slate-500">
+                      <div className="rounded-lg border bg-card p-3">
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Calendar className="h-3 w-3" />
                           Başlangıç
                         </p>
-                        <p className="mt-1 text-xs font-medium text-slate-900">
+                        <p className="mt-1 text-xs font-medium">
                           {formatDate(cert.validFrom)}
                         </p>
                       </div>
-                      <div className="rounded-lg border border-slate-200 bg-white p-3">
-                        <p className="flex items-center gap-1 text-xs text-slate-500">
+                      <div className="rounded-lg border bg-card p-3">
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Calendar className="h-3 w-3" />
                           Bitiş
                         </p>
                         <p className={`mt-1 text-xs font-medium ${
-                          expired ? 'text-red-600' : expiringSoon ? 'text-orange-600' : 'text-green-600'
+                          expired ? 'text-red-600 dark:text-red-400' : expiringSoon ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'
                         }`}>
                           {formatDate(cert.validTo)}
                         </p>
@@ -271,29 +319,29 @@ export function CertificatesPage() {
                     </div>
 
                     {/* Technical Details */}
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                      <h4 className="mb-3 text-sm font-semibold text-slate-900">🔐 Teknik Detaylar</h4>
+                    <div className="rounded-lg border bg-muted p-4">
+                      <h4 className="mb-3 text-sm font-semibold">🔐 Teknik Detaylar</h4>
                       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                         <div>
-                          <p className="text-xs text-slate-500">Tip</p>
-                          <p className="mt-1 text-sm font-medium text-slate-900">{cert.type}</p>
+                          <p className="text-xs text-muted-foreground">Tip</p>
+                          <p className="mt-1 text-sm font-medium">{cert.type}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-500">İmza Algoritması</p>
-                          <p className="mt-1 text-sm font-medium text-slate-900">
+                          <p className="text-xs text-muted-foreground">İmza Algoritması</p>
+                          <p className="mt-1 text-sm font-medium">
                             {cert.signatureAlgorithm}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-500">Key Usage</p>
-                          <p className="mt-1 text-sm font-medium text-slate-900">{cert.keyUsage}</p>
+                          <p className="text-xs text-muted-foreground">Key Usage</p>
+                          <p className="mt-1 text-sm font-medium">{cert.keyUsage}</p>
                         </div>
                       </div>
 
                       {cert.extendedKeyUsage && (
                         <div className="mt-3">
-                          <p className="text-xs text-slate-500">Extended Key Usage</p>
-                          <p className="mt-1 font-mono text-xs text-slate-700">
+                          <p className="text-xs text-muted-foreground">Extended Key Usage</p>
+                          <p className="mt-1 font-mono text-xs">
                             {cert.extendedKeyUsage}
                           </p>
                         </div>
@@ -301,24 +349,27 @@ export function CertificatesPage() {
 
                       {cert.certificatePolicies && (
                         <div className="mt-3">
-                          <p className="text-xs text-slate-500">Certificate Policies</p>
-                          <p className="mt-1 text-xs text-slate-700 break-all">
+                          <p className="text-xs text-muted-foreground">Certificate Policies</p>
+                          <p className="mt-1 text-xs break-all">
                             {cert.certificatePolicies}
                           </p>
                         </div>
                       )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })
+                      </CardContent>
+                    </AccordionContent>
+                  </Card>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
         ) : (
           <Card>
             <CardContent className="py-12 text-center">
-              <ShieldCheck className="mx-auto h-12 w-12 text-slate-400" />
-              <p className="mt-4 font-medium text-slate-700">Sertifika bulunamadı</p>
-              <p className="mt-2 text-sm text-slate-600">
+              <ShieldCheck className="mx-auto h-12 w-12 text-muted-foreground" />
+              <p className="mt-4 font-medium">Sertifika bulunamadı</p>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Keystore'unuzda dijital sertifika bulunmuyor.
               </p>
             </CardContent>
@@ -334,15 +385,42 @@ export function CertificatesPage() {
             <CardDescription>Yapılandırma bilgileri</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {Object.entries(keystoreInfo).map(([key, value]) => (
-                <div key={key} className="rounded-lg bg-slate-50 p-3">
-                  <p className="text-xs text-slate-500">{key}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-900">
-                    {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
-                  </p>
-                </div>
-              ))}
+            <div className="grid gap-4 md:grid-cols-2">
+              {Object.entries(keystoreInfo).map(([key, value]) => {
+                // Skip empty values
+                if (value === null || value === undefined || value === '') return null;
+                
+                // Türkçe label mapping
+                const labelMap: Record<string, string> = {
+                  success: 'Durum',
+                  keystoreType: 'Keystore Tipi',
+                  certificateAlias: 'Sertifika Alias',
+                  certificateSerialNumber: 'Seri Numarası',
+                  pfxPath: 'PFX Dosya Yolu',
+                  pkcs11Library: 'PKCS11 Kütüphane',
+                  pkcs11Slot: 'PKCS11 Slot',
+                };
+                
+                const label = labelMap[key] || key;
+                const displayValue = typeof value === 'boolean' 
+                  ? (value ? '✓ Başarılı' : '✗ Hata')
+                  : typeof value === 'object' 
+                    ? JSON.stringify(value, null, 2) 
+                    : String(value);
+                
+                return (
+                  <div key={key} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{label}</span>
+                    </div>
+                    <div className="rounded-lg border bg-muted/50 p-3">
+                      <p className={`text-sm ${key === 'pfxPath' || key === 'pkcs11Library' ? 'font-mono text-xs break-all' : ''}`}>
+                        {displayValue}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

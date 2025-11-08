@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useSignSOAP } from '@/hooks/use-sign';
-import { Loader2, Mail, CheckCircle, AlertCircle, Download } from 'lucide-react';
+import { Loader2, Mail } from 'lucide-react';
+import { toast } from 'sonner';
 
 const EXAMPLE_SOAP_11 = `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
@@ -53,10 +54,26 @@ export function SOAPSignPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      
+      // Success toast
+      toast.success('SOAP İmzalama Başarılı!', {
+        description: `${selectedFile.name} başarıyla imzalandı ve indiriliyor.`,
+      });
     } catch (error) {
+      // Error toast
+      toast.error('SOAP İmzalama Hatası!', {
+        description: (error as any)?.body?.message || (error as any)?.message || 'SOAP imzalama sırasında bir hata oluştu.',
+      });
       console.error('Sign error:', error);
     }
   };
+
+  // Auto-clear previous state on unmount
+  useEffect(() => {
+    return () => {
+      signSOAP.reset();
+    };
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -75,8 +92,8 @@ export function SOAPSignPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">SOAP İmzalama (WS-Security)</h1>
-        <p className="mt-2 text-slate-600">
+        <h1 className="text-3xl font-bold">SOAP İmzalama (WS-Security)</h1>
+        <p className="mt-2 text-muted-foreground">
           SOAP mesajlarınızı WS-Security ile dijital olarak imzalayın
         </p>
       </div>
@@ -97,14 +114,12 @@ export function SOAPSignPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* SOAP Version */}
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="soap12"
                   checked={soap12}
-                  onChange={(e) => setSoap12(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300"
+                  onCheckedChange={setSoap12}
                 />
-                <Label htmlFor="soap12" className="cursor-pointer">
+                <Label htmlFor="soap12" className="cursor-pointer text-sm font-normal">
                   SOAP 1.2 (varsayılan: SOAP 1.1)
                 </Label>
               </div>
@@ -125,7 +140,7 @@ export function SOAPSignPage() {
                   </Button>
                 </div>
                 {selectedFile && (
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-muted-foreground">
                     Seçilen: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
                   </p>
                 )}
@@ -155,44 +170,14 @@ export function SOAPSignPage() {
 
         {/* Result */}
         <div className="space-y-6">
-          {/* Success */}
-          {signSOAP.isSuccess && (
-            <Alert variant="success">
-              <CheckCircle className="h-4 w-4" />
-              <AlertTitle>Başarılı!</AlertTitle>
-              <AlertDescription>
-                <div className="mt-2 space-y-2">
-                  <p>SOAP mesajı başarıyla imzalandı ve indirildi.</p>
-                  <div className="flex items-center gap-2">
-                    <Download className="h-4 w-4" />
-                    <span className="text-sm">İmzalı dosya indiriliyor...</span>
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Error */}
-          {signSOAP.isError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Hata!</AlertTitle>
-              <AlertDescription>
-                {(signSOAP.error as any)?.body?.message ||
-                  (signSOAP.error as any)?.message ||
-                  'SOAP imzalama sırasında bir hata oluştu.'}
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* Info Card */}
           <Card>
             <CardHeader>
               <CardTitle>WS-Security Hakkında</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-600">
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
               <div>
-                <p className="font-medium text-slate-900">WS-Security Özellikleri:</p>
+                <p className="font-medium">WS-Security Özellikleri:</p>
                 <ul className="mt-1 list-inside list-disc space-y-1">
                   <li>SOAP 1.1 ve 1.2 desteği</li>
                   <li>XML Signature standardı</li>
@@ -201,7 +186,7 @@ export function SOAPSignPage() {
                 </ul>
               </div>
               <div>
-                <p className="font-medium text-slate-900">Kullanım Alanları:</p>
+                <p className="font-medium">Kullanım Alanları:</p>
                 <ul className="mt-1 list-inside list-disc space-y-1">
                   <li>Web servisleri güvenliği</li>
                   <li>B2B entegrasyonlar</li>

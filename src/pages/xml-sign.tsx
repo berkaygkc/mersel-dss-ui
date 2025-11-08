@@ -1,12 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useSignXML } from '@/hooks/use-sign';
 import { DocumentType } from '@/api/generated';
-import { Loader2, FileCode, CheckCircle, AlertCircle, Download } from 'lucide-react';
+import { Loader2, FileCode } from 'lucide-react';
+import { toast } from 'sonner';
 
 const EXAMPLE_EFATURA = `<?xml version="1.0" encoding="UTF-8"?>
 <Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2">
@@ -41,10 +49,26 @@ export function XMLSignPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      
+      // Success toast
+      toast.success('XML İmzalama Başarılı!', {
+        description: `${selectedFile.name} başarıyla imzalandı ve indiriliyor.`,
+      });
     } catch (error) {
+      // Error toast
+      toast.error('XML İmzalama Hatası!', {
+        description: (error as any)?.body?.message || (error as any)?.message || 'XML imzalama sırasında bir hata oluştu.',
+      });
       console.error('Sign error:', error);
     }
   };
+
+  // Auto-clear previous state on unmount
+  useEffect(() => {
+    return () => {
+      signXML.reset();
+    };
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -62,8 +86,8 @@ export function XMLSignPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">XML İmzalama (XAdES)</h1>
-        <p className="mt-2 text-slate-600">
+        <h1 className="text-3xl font-bold">XML İmzalama (XAdES)</h1>
+        <p className="mt-2 text-muted-foreground">
           XML belgelerinizi dijital olarak imzalayın (e-Fatura, e-Arşiv, vb.)
         </p>
       </div>
@@ -85,18 +109,18 @@ export function XMLSignPage() {
               {/* Document Type */}
               <div className="space-y-2">
                 <Label htmlFor="document-type">Belge Tipi</Label>
-                <select
-                  id="document-type"
-                  value={documentType}
-                  onChange={(e) => setDocumentType(e.target.value as DocumentType)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <option value={DocumentType.UBL_DOCUMENT}>e-Fatura / UBL Belge</option>
-                  <option value={DocumentType.EARCHIVE_REPORT}>e-Arşiv Raporu</option>
-                  <option value={DocumentType.HR_XML}>HrXml</option>
-                  <option value={DocumentType.OTHER_XML_DOCUMENT}>Diğer XML</option>
-                  <option value={DocumentType.NONE}>None</option>
-                </select>
+                <Select value={documentType} onValueChange={(value) => setDocumentType(value as DocumentType)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Belge tipini seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={DocumentType.UBL_DOCUMENT}>e-Fatura / UBL Belge</SelectItem>
+                    <SelectItem value={DocumentType.EARCHIVE_REPORT}>e-Arşiv Raporu</SelectItem>
+                    <SelectItem value={DocumentType.HR_XML}>HrXml</SelectItem>
+                    <SelectItem value={DocumentType.OTHER_XML_DOCUMENT}>Diğer XML</SelectItem>
+                    <SelectItem value={DocumentType.NONE}>None</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* File Upload */}
@@ -115,7 +139,7 @@ export function XMLSignPage() {
                   </Button>
                 </div>
                 {selectedFile && (
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-muted-foreground">
                     Seçilen: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
                   </p>
                 )}
@@ -123,14 +147,12 @@ export function XMLSignPage() {
 
               {/* Zip File */}
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="zip-file"
                   checked={zipFile}
-                  onChange={(e) => setZipFile(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300"
+                  onCheckedChange={setZipFile}
                 />
-                <Label htmlFor="zip-file" className="cursor-pointer">
+                <Label htmlFor="zip-file" className="cursor-pointer text-sm font-normal">
                   ZIP olarak indir
                 </Label>
               </div>
@@ -159,44 +181,14 @@ export function XMLSignPage() {
 
         {/* Result */}
         <div className="space-y-6">
-          {/* Success */}
-          {signXML.isSuccess && (
-            <Alert variant="success">
-              <CheckCircle className="h-4 w-4" />
-              <AlertTitle>Başarılı!</AlertTitle>
-              <AlertDescription>
-                <div className="mt-2 space-y-2">
-                  <p>XML belgesi başarıyla imzalandı ve indirildi.</p>
-                  <div className="flex items-center gap-2">
-                    <Download className="h-4 w-4" />
-                    <span className="text-sm">İmzalı dosya indiriliyor...</span>
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Error */}
-          {signXML.isError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Hata!</AlertTitle>
-              <AlertDescription>
-                {(signXML.error as any)?.body?.message ||
-                  (signXML.error as any)?.message ||
-                  'XML imzalama sırasında bir hata oluştu.'}
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* Info Card */}
           <Card>
             <CardHeader>
               <CardTitle>XAdES ve e-Fatura</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-600">
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
               <div>
-                <p className="font-medium text-slate-900">Desteklenen Formatlar:</p>
+                <p className="font-medium">Desteklenen Formatlar:</p>
                 <ul className="mt-1 list-inside list-disc space-y-1">
                   <li>e-Fatura (UBL Invoice)</li>
                   <li>e-Arşiv Fatura</li>
@@ -206,7 +198,7 @@ export function XMLSignPage() {
                 </ul>
               </div>
               <div>
-                <p className="font-medium text-slate-900">XAdES İmza:</p>
+                <p className="font-medium">XAdES İmza:</p>
                 <p className="mt-1">
                   XML belgelerine ETSI standardına uygun dijital imza ekler.
                   e-Fatura sisteminde kullanılır.

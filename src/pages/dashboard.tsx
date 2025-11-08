@@ -12,6 +12,7 @@ import {
   Activity,
   CreditCard,
   ArrowRight,
+  CheckCircle2,
 } from 'lucide-react';
 
 export function Dashboard() {
@@ -22,38 +23,41 @@ export function Dashboard() {
 
   const certificateCount = certResponse?.certificateCount || 0;
   const keystoreType = certResponse?.keystoreType || 'N/A';
+  
+  // Aktif sertifika var mı?
+  const hasActiveCertificate = certResponse?.success && certificateCount > 0;
 
   const features = [
     {
       name: 'PDF İmzalama',
       description: 'PAdES standardı ile PDF belge imzalama',
       icon: FileText,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
+      color: 'text-red-600 dark:text-red-400',
+      bgColor: 'bg-red-50 dark:bg-red-950',
       href: '/pdf-sign',
     },
     {
       name: 'XML İmzalama',
       description: 'XAdES ile XML belge imzalama (e-Fatura, e-Arşiv)',
       icon: FileCode,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-blue-600 dark:text-blue-400',
+      bgColor: 'bg-blue-50 dark:bg-blue-950',
       href: '/xml-sign',
     },
     {
       name: 'SOAP İmzalama',
       description: 'WS-Security ile SOAP mesaj imzalama',
       icon: Mail,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'text-green-600 dark:text-green-400',
+      bgColor: 'bg-green-50 dark:bg-green-950',
       href: '/soap-sign',
     },
     {
       name: 'Timestamp',
       description: 'Zaman damgası alma ve doğrulama',
       icon: Clock,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'text-purple-600 dark:text-purple-400',
+      bgColor: 'bg-purple-50 dark:bg-purple-950',
       href: '/timestamp',
     },
   ];
@@ -62,8 +66,8 @@ export function Dashboard() {
     <div className="space-y-8">
       {/* Welcome Section */}
       <div>
-        <h1 className="text-4xl font-bold text-slate-900">Dashboard</h1>
-        <p className="mt-2 text-lg text-slate-600">
+        <h1 className="text-4xl font-bold">Dashboard</h1>
+        <p className="mt-2 text-lg text-muted-foreground">
           Dijital imza işlemlerinizi yönetin ve izleyin
         </p>
       </div>
@@ -79,11 +83,14 @@ export function Dashboard() {
           <CardContent>
             {certLoading ? (
               <p className="text-2xl font-bold">...</p>
-            ) : certResponse && certResponse.success ? (
+            ) : hasActiveCertificate ? (
               <>
-                <p className="text-2xl font-bold">{certificateCount}</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold">{certificateCount}</p>
+                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {keystoreType} - Aktif
+                  {keystoreType} - Hazır
                 </p>
               </>
             ) : (
@@ -173,7 +180,7 @@ export function Dashboard() {
 
       {/* Features Grid */}
       <div>
-        <h2 className="mb-4 text-2xl font-semibold text-slate-900">İmzalama İşlemleri</h2>
+        <h2 className="mb-4 text-2xl font-semibold">İmzalama İşlemleri</h2>
         <div className="grid gap-6 md:grid-cols-2">
           {features.map((feature) => (
             <Link key={feature.name} to={feature.href}>
@@ -191,7 +198,7 @@ export function Dashboard() {
                         </CardDescription>
                       </div>
                     </div>
-                    <ArrowRight className="h-5 w-5 text-slate-400" />
+                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
                   </div>
                 </CardHeader>
               </Card>
@@ -210,23 +217,23 @@ export function Dashboard() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Backend URL:</span>
+                <span className="text-muted-foreground">Backend URL:</span>
                 <span className="font-mono font-medium text-xs">
                   {import.meta.env.VITE_API_URL || 'http://localhost:8085'}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600">API Version:</span>
+                <span className="text-muted-foreground">API Version:</span>
                 <span className="font-medium">v0.1.0</span>
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Desteklenen Standartlar:</span>
+                <span className="text-muted-foreground">Desteklenen Standartlar:</span>
                 <span className="font-medium">PAdES, XAdES, WS-Security</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Timestamp:</span>
+                <span className="text-muted-foreground">Timestamp:</span>
                 <span className="font-medium">RFC 3161</span>
               </div>
             </div>

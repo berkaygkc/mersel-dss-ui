@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useTubitakCredit } from '@/hooks/use-certificates';
 import { useTimestampStatus } from '@/hooks/use-timestamp';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -29,17 +30,17 @@ export function Topbar() {
   const { data: timestampData } = useTimestampStatus();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto max-w-7xl px-4">
         <div className="flex h-16 items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 mr-8">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 shadow-lg shadow-blue-500/50">
+            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-violet-600 to-violet-700 shadow-lg shadow-violet-500/50">
               <ShieldCheck className="h-5 w-5 text-white" />
             </div>
             <div className="hidden md:block">
-              <h1 className="text-lg font-bold text-slate-900">Sign API</h1>
-              <p className="text-xs text-slate-500 -mt-1">Dijital İmza</p>
+              <h1 className="text-lg font-bold">Sign API</h1>
+              <p className="text-xs text-muted-foreground -mt-1">Dijital İmza</p>
             </div>
           </Link>
 
@@ -54,8 +55,8 @@ export function Topbar() {
                   className={cn(
                     'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all',
                     isActive
-                      ? 'bg-blue-50 text-blue-700 shadow-sm'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                   )}
                 >
                   <item.icon className="h-4 w-4" />
@@ -78,12 +79,17 @@ export function Topbar() {
             )}
 
             {/* Credit */}
-            {creditData && (
+            {creditData && creditData.remainingCredit !== undefined && (
               <Badge variant="secondary" className="hidden sm:inline-flex">
                 <CreditCard className="mr-1 h-3 w-3" />
-                {creditData.credit}
+                {creditData.remainingCredit}
               </Badge>
             )}
+
+            {/* Theme Toggle */}
+            <div className="hidden md:flex">
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </div>

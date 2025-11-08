@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useSignPDF } from '@/hooks/use-sign';
-import { Loader2, FileText, CheckCircle, AlertCircle, Download } from 'lucide-react';
+import { Loader2, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function PDFSignPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -33,10 +34,26 @@ export function PDFSignPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      
+      // Success toast
+      toast.success('PDF İmzalama Başarılı!', {
+        description: `${selectedFile.name} başarıyla imzalandı ve indiriliyor.`,
+      });
     } catch (error) {
+      // Error toast
+      toast.error('PDF İmzalama Hatası!', {
+        description: (error as any)?.body?.message || (error as any)?.message || 'PDF imzalama sırasında bir hata oluştu.',
+      });
       console.error('Sign error:', error);
     }
   };
+
+  // Auto-clear previous state on unmount
+  useEffect(() => {
+    return () => {
+      signPDF.reset();
+    };
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,8 +65,8 @@ export function PDFSignPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">PDF İmzalama (PAdES)</h1>
-        <p className="mt-2 text-slate-600">
+        <h1 className="text-3xl font-bold">PDF İmzalama (PAdES)</h1>
+        <p className="mt-2 text-muted-foreground">
           PDF belgelerinizi dijital olarak imzalayın
         </p>
       </div>
@@ -79,7 +96,7 @@ export function PDFSignPage() {
                   required
                 />
                 {selectedFile && (
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-muted-foreground">
                     Seçilen: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
                   </p>
                 )}
@@ -87,14 +104,12 @@ export function PDFSignPage() {
 
               {/* Append Mode */}
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="append-mode"
                   checked={appendMode}
-                  onChange={(e) => setAppendMode(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300"
+                  onCheckedChange={setAppendMode}
                 />
-                <Label htmlFor="append-mode" className="cursor-pointer">
+                <Label htmlFor="append-mode" className="cursor-pointer text-sm font-normal">
                   Append Mode (Mevcut imzaların üzerine ekle)
                 </Label>
               </div>
@@ -123,42 +138,12 @@ export function PDFSignPage() {
 
         {/* Result */}
         <div className="space-y-6">
-          {/* Success */}
-          {signPDF.isSuccess && (
-            <Alert variant="success">
-              <CheckCircle className="h-4 w-4" />
-              <AlertTitle>Başarılı!</AlertTitle>
-              <AlertDescription>
-                <div className="mt-2 space-y-2">
-                  <p>PDF belgesi başarıyla imzalandı ve indirildi.</p>
-                  <div className="flex items-center gap-2">
-                    <Download className="h-4 w-4" />
-                    <span className="text-sm">İmzalı dosya indiriliyor...</span>
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Error */}
-          {signPDF.isError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Hata!</AlertTitle>
-              <AlertDescription>
-                {(signPDF.error as any)?.body?.message ||
-                  (signPDF.error as any)?.message ||
-                  'PDF imzalama sırasında bir hata oluştu.'}
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* Info Card */}
           <Card>
             <CardHeader>
               <CardTitle>PAdES Hakkında</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm text-slate-600">
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
               <p>
                 <strong>PAdES (PDF Advanced Electronic Signatures)</strong>
               </p>
