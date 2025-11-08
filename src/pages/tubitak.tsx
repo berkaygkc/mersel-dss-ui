@@ -12,9 +12,9 @@ export function TubitakPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold">TÜBİTAK Kontör Sorgulama</h1>
+          <h1 className="text-3xl font-bold">Tübitak Kontör Sorgulama</h1>
           <p className="mt-2 text-muted-foreground">
-            TÜBİTAK ESYA timestamp servis kontörünüzü sorgulayın
+            Tübitak Zaman Damgası kontörünüzü sorgulayın
           </p>
         </div>
         <Button
@@ -143,7 +143,7 @@ export function TubitakPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="text-violet-500">•</span>
-                    <span>e-Fatura ve e-Arşiv imzalama</span>
+                    <span>e-Arşiv Rapor imzalama</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="text-violet-500">•</span>

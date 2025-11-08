@@ -1,12 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
-  FileText,
-  FileCode,
-  Mail,
   Clock,
   CreditCard,
   ShieldCheck,
   LayoutDashboard,
+  PenTool,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -15,12 +13,10 @@ import { useTimestampStatus } from '@/hooks/use-timestamp';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'PDF', href: '/pdf-sign', icon: FileText },
-  { name: 'XML', href: '/xml-sign', icon: FileCode },
-  { name: 'SOAP', href: '/soap-sign', icon: Mail },
-  { name: 'Timestamp', href: '/timestamp', icon: Clock },
-  { name: 'Kontör', href: '/tubitak', icon: CreditCard },
+  { name: 'Ana Sayfa', href: '/', icon: LayoutDashboard },
+  { name: 'İmzalama', href: '/sign', icon: PenTool },
+  { name: 'Zaman Damgası', href: '/timestamp', icon: Clock },
+  { name: 'Tübitak ZD.', href: '/tubitak', icon: CreditCard },
   { name: 'Sertifikalar', href: '/certificates', icon: ShieldCheck },
 ];
 
@@ -72,9 +68,10 @@ export function Topbar() {
             {timestampData && (
               <Badge
                 variant={timestampData.available ? 'success' : 'destructive'}
-                className="hidden md:inline-flex"
+                className="hidden md:inline-flex gap-1"
               >
-                TSA: {timestampData.available ? 'ON' : 'OFF'}
+                <Clock className="h-3 w-3" />
+                ZD: {timestampData.available ? 'Aktif' : 'Kapalı'}
               </Badge>
             )}
 

@@ -5,15 +5,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCertificates, useKeystoreInfo, useTubitakCredit } from '@/hooks/use-certificates';
 import { useTimestampStatus } from '@/hooks/use-timestamp';
 import {
-  FileText,
-  FileCode,
-  Mail,
   Clock,
   ShieldCheck,
   Activity,
   CreditCard,
   ArrowRight,
   CheckCircle2,
+  PenTool,
 } from 'lucide-react';
 
 export function Dashboard() {
@@ -30,35 +28,19 @@ export function Dashboard() {
 
   const features = [
     {
-      name: 'PDF İmzalama',
-      description: 'PAdES standardı ile PDF belge imzalama',
-      icon: FileText,
-      color: 'text-red-600 dark:text-red-400',
-      bgColor: 'bg-red-50 dark:bg-red-950',
-      href: '/pdf-sign',
+      name: 'Dijital İmzalama',
+      description: 'PDF, XML ve SOAP belgelerinizi dijital olarak imzalayın',
+      icon: PenTool,
+      color: 'text-violet-600 dark:text-violet-400',
+      bgColor: 'bg-violet-50 dark:bg-violet-950',
+      href: '/sign',
     },
     {
-      name: 'XML İmzalama',
-      description: 'XAdES ile XML belge imzalama (e-Fatura, e-Arşiv)',
-      icon: FileCode,
+      name: 'Zaman Damgası',
+      description: 'RFC 3161 uyumlu zaman damgası alma ve doğrulama',
+      icon: Clock,
       color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-50 dark:bg-blue-950',
-      href: '/xml-sign',
-    },
-    {
-      name: 'SOAP İmzalama',
-      description: 'WS-Security ile SOAP mesaj imzalama',
-      icon: Mail,
-      color: 'text-green-600 dark:text-green-400',
-      bgColor: 'bg-green-50 dark:bg-green-950',
-      href: '/soap-sign',
-    },
-    {
-      name: 'Timestamp',
-      description: 'Zaman damgası alma ve doğrulama',
-      icon: Clock,
-      color: 'text-purple-600 dark:text-purple-400',
-      bgColor: 'bg-purple-50 dark:bg-purple-950',
       href: '/timestamp',
     },
   ];
@@ -129,7 +111,7 @@ export function Dashboard() {
         ) : (
           <Card className="transition-shadow hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Timestamp</CardTitle>
+              <CardTitle className="text-sm font-medium">Zaman Damgası</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -223,16 +205,16 @@ export function Dashboard() {
         )}
       </div>
 
-      {/* Features Grid */}
-      <div>
-        <h2 className="mb-4 text-2xl font-semibold">İmzalama İşlemleri</h2>
-        <div className="grid gap-6 md:grid-cols-2">
+          {/* Features Grid */}
+          <div>
+            <h2 className="mb-4 text-2xl font-semibold">Hızlı Erişim</h2>
+            <div className="grid gap-6 md:grid-cols-2">
           {features.map((feature) => (
             <Link key={feature.name} to={feature.href}>
               <Card className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
                       <div className={`rounded-lg p-3 ${feature.bgColor}`}>
                         <feature.icon className={`h-6 w-6 ${feature.color}`} />
                       </div>
@@ -243,7 +225,7 @@ export function Dashboard() {
                         </CardDescription>
                       </div>
                     </div>
-                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                    <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                   </div>
                 </CardHeader>
               </Card>
@@ -278,7 +260,7 @@ export function Dashboard() {
                 <span className="font-medium">PAdES, XAdES, WS-Security</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Timestamp:</span>
+                <span className="text-muted-foreground">Zaman Damgası:</span>
                 <span className="font-medium">RFC 3161</span>
               </div>
             </div>

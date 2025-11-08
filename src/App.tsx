@@ -4,9 +4,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from '@/lib/query-client';
 import { TopbarLayout } from '@/components/layout/topbar-layout';
 import { Dashboard } from '@/pages/dashboard';
-import { PDFSignPage } from '@/pages/pdf-sign';
-import { XMLSignPage } from '@/pages/xml-sign';
-import { SOAPSignPage } from '@/pages/soap-sign';
+import { SigningPage } from '@/pages/signing';
 import { TimestampPage } from '@/pages/timestamp';
 import { TubitakPage } from '@/pages/tubitak';
 import { CertificatesPage } from '@/pages/certificates';
@@ -18,9 +16,7 @@ function App() {
         <Routes>
           <Route path="/" element={<TopbarLayout />}>
             <Route index element={<Dashboard />} />
-            <Route path="pdf-sign" element={<PDFSignPage />} />
-            <Route path="xml-sign" element={<XMLSignPage />} />
-            <Route path="soap-sign" element={<SOAPSignPage />} />
+            <Route path="sign" element={<SigningPage />} />
             <Route path="timestamp" element={<TimestampPage />} />
             <Route path="tubitak" element={<TubitakPage />} />
             <Route path="certificates" element={<CertificatesPage />} />

@@ -5,6 +5,9 @@ import type { SignPadesDto, SignXadesDto, SignWsSecurityDto } from '@/api/genera
 // Configure API client
 import '@/lib/api-config';
 
+// Re-export DocumentType for convenience
+export { DocumentType } from '@/api/generated';
+
 // PDF Signing
 export const useSignPDF = () => {
   return useMutation({
