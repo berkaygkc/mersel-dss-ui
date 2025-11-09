@@ -42,6 +42,9 @@ yarn preview
 
 ## 🎯 Özellikler
 
+- ✅ **Dijital İmzalama** - PDF (PAdES), XML (XAdES), SOAP (WS-Security)
+- ✅ **İmza Doğrulama** - PDF ve XML belgelerindeki imzaları doğrulama
+- ✅ **Zaman Damgası** - RFC 3161 uyumlu timestamp alma ve doğrulama
 - ✅ Modern UI/UX (Topbar navigation)
 - ✅ Type-safe API (OpenAPI generated)
 - ✅ Dark mode
@@ -68,8 +71,14 @@ yarn preview
 
 ```bash
 # .env
-VITE_API_BASE_URL=http://localhost:8085
+# Sign API (İmzalama servisi)
+VITE_API_URL=http://localhost:8085
+
+# Verify API (Doğrulama servisi) 
+VITE_VERIFY_API_URL=http://localhost:8086
 ```
+
+> **Not:** `VITE_VERIFY_API_URL` belirtilmezse varsayılan olarak `http://localhost:8086` kullanılır.
 
 ---
 
@@ -92,7 +101,8 @@ sign-ui/
 | Link | Açıklama |
 |------|----------|
 | [**dss.mersel.dev**](https://dss.mersel.dev) | 📚 **Merkezi Dökümantasyon** |
-| [**../sign-api**](../sign-api) | Backend API |
+| [**../sign-api**](../sign-api) | İmzalama Backend API |
+| [**../verify-api**](../verify-api) | Doğrulama Backend API |
 
 ---
 

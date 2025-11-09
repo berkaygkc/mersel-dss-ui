@@ -8,12 +8,14 @@ import {
   LayoutDashboard,
   PenTool,
   ShieldCheck,
+  ShieldAlert,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const navigation = [
   { name: 'Ana Sayfa', href: '/', icon: LayoutDashboard },
   { name: 'İmzalama', href: '/sign', icon: PenTool },
+  { name: 'Doğrulama', href: '/verify', icon: ShieldAlert },
   { name: 'Zaman Damgası', href: '/timestamp', icon: Clock },
   { name: 'Tübitak ZD.', href: '/tubitak', icon: CreditCard },
   { name: 'Sertifikalar', href: '/certificates', icon: ShieldCheck },

@@ -5,6 +5,7 @@ import { queryClient } from '@/lib/query-client';
 import { TopbarLayout } from '@/components/layout/topbar-layout';
 import { Dashboard } from '@/pages/dashboard';
 import { SigningPage } from '@/pages/signing';
+import { VerifyPage } from '@/pages/verify';
 import { TimestampPage } from '@/pages/timestamp';
 import { TubitakPage } from '@/pages/tubitak';
 import { CertificatesPage } from '@/pages/certificates';
@@ -17,6 +18,7 @@ function App() {
           <Route path="/" element={<TopbarLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="sign" element={<SigningPage />} />
+            <Route path="verify" element={<VerifyPage />} />
             <Route path="timestamp" element={<TimestampPage />} />
             <Route path="tubitak" element={<TubitakPage />} />
             <Route path="certificates" element={<CertificatesPage />} />

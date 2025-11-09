@@ -12,6 +12,7 @@ import {
   ArrowRight,
   CheckCircle2,
   PenTool,
+  ShieldAlert,
 } from 'lucide-react';
 
 export function Dashboard() {
@@ -34,6 +35,14 @@ export function Dashboard() {
       color: 'text-violet-600 dark:text-violet-400',
       bgColor: 'bg-violet-50 dark:bg-violet-950',
       href: '/sign',
+    },
+    {
+      name: 'İmza Doğrulama',
+      description: 'PDF ve XML belgelerindeki dijital imzaları doğrulayın',
+      icon: ShieldAlert,
+      color: 'text-green-600 dark:text-green-400',
+      bgColor: 'bg-green-50 dark:bg-green-950',
+      href: '/verify',
     },
     {
       name: 'Zaman Damgası',
@@ -208,7 +217,7 @@ export function Dashboard() {
           {/* Features Grid */}
           <div>
             <h2 className="mb-4 text-2xl font-semibold">Hızlı Erişim</h2>
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-3">
           {features.map((feature) => (
             <Link key={feature.name} to={feature.href}>
               <Card className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1">
