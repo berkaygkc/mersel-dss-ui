@@ -51,23 +51,7 @@ export const useTimestampStatus = () => {
     queryFn: async () => {
       const status = await TimestampService.getStatus();
       
-      // Backend JSON object veya string dönebilir
-      if (typeof status === 'string') {
-        try {
-          const parsed = JSON.parse(status);
-          return {
-            available: parsed.configured === true,
-            status: parsed.message || status,
-          };
-        } catch {
-          return {
-            available: status.includes('aktif') || status.includes('available') || status.includes('OK'),
-            status,
-          };
-        }
-      }
-      
-      // Eğer zaten object ise
+      // Önce object olarak kontrol et (backend Map<String, Object> döndürüyor)
       if (typeof status === 'object' && status !== null) {
         const statusObj = status as any;
         return {
@@ -76,6 +60,24 @@ export const useTimestampStatus = () => {
         };
       }
       
+      // Backend JSON string dönerse
+      if (typeof status === 'string') {
+        try {
+          const parsed = JSON.parse(status);
+          return {
+            available: parsed.configured === true,
+            status: parsed.message || status,
+          };
+        } catch {
+          // Parse edilemezse string içeriğinden tahmin et
+          return {
+            available: status.includes('aktif') || status.includes('available') || status.includes('OK'),
+            status,
+          };
+        }
+      }
+      
+      // Beklenmeyen durum
       return {
         available: false,
         status: String(status),
