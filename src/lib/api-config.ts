@@ -1,7 +1,9 @@
 import { OpenAPI } from '@/api/generated';
+import { SIGN_API_URL } from './runtime-config';
 
 // Configure the generated OpenAPI client
-OpenAPI.BASE = import.meta.env.VITE_API_URL || 'http://localhost:8085';
+// Use runtime config for Kubernetes compatibility
+OpenAPI.BASE = SIGN_API_URL();
 OpenAPI.WITH_CREDENTIALS = false; // CORS için false
 OpenAPI.CREDENTIALS = 'omit'; // credentials gönderme
 

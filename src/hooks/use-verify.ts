@@ -2,9 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 
 // Configure API client
 import '@/lib/api-config';
-
-// Verify API base URL (varsayılan port 8086)
-const VERIFY_API_URL = import.meta.env.VITE_VERIFY_API_URL || 'http://localhost:8086';
+import { VERIFY_API_URL } from '@/lib/runtime-config';
 
 export enum VerificationLevel {
   SIMPLE = 'SIMPLE',
@@ -132,7 +130,7 @@ export const useVerifyPDF = () => {
       // Yeni unified endpoint'e level parametresini gönder
       formData.append('level', data.level || VerificationLevel.SIMPLE);
 
-      const response = await fetch(`${VERIFY_API_URL}/api/v1/verify/pades`, {
+      const response = await fetch(`${VERIFY_API_URL()}/api/v1/verify/pades`, {
         method: 'POST',
         body: formData,
       });
@@ -161,7 +159,7 @@ export const useVerifyXML = () => {
       // Yeni unified endpoint'e level parametresini gönder
       formData.append('level', data.level || VerificationLevel.SIMPLE);
 
-      const response = await fetch(`${VERIFY_API_URL}/api/v1/verify/xades`, {
+      const response = await fetch(`${VERIFY_API_URL()}/api/v1/verify/xades`, {
         method: 'POST',
         body: formData,
       });
@@ -190,7 +188,7 @@ export const useVerifyTimestamp = () => {
       // validateCertificate parametresini gönder (default: true)
       formData.append('validateCertificate', String(data.validateCertificate !== false));
 
-      const response = await fetch(`${VERIFY_API_URL}/api/v1/verify/timestamp`, {
+      const response = await fetch(`${VERIFY_API_URL()}/api/v1/verify/timestamp`, {
         method: 'POST',
         body: formData,
       });
