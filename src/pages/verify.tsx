@@ -18,7 +18,13 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { 
   useVerifyPDF, 
   useVerifyXML, 
@@ -36,7 +42,8 @@ import {
   Info, 
   AlertCircle,
   XCircle,
-  ShieldCheck
+  ShieldCheck,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -45,18 +52,21 @@ export function VerifyPage() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfLevel, setPdfLevel] = useState<VerificationLevel>(VerificationLevel.SIMPLE);
   const [pdfResult, setPdfResult] = useState<VerificationResult | null>(null);
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
 
   // XML state
   const [xmlFile, setXmlFile] = useState<File | null>(null);
   const [xmlOriginalFile, setXmlOriginalFile] = useState<File | null>(null);
   const [xmlLevel, setXmlLevel] = useState<VerificationLevel>(VerificationLevel.SIMPLE);
   const [xmlResult, setXmlResult] = useState<VerificationResult | null>(null);
+  const [xmlDialogOpen, setXmlDialogOpen] = useState(false);
 
   // Timestamp state
   const [timestampFile, setTimestampFile] = useState<File | null>(null);
   const [timestampOriginalData, setTimestampOriginalData] = useState<File | null>(null);
   const [timestampValidateCert, setTimestampValidateCert] = useState(true);
   const [timestampResult, setTimestampResult] = useState<TimestampVerificationResult | null>(null);
+  const [timestampDialogOpen, setTimestampDialogOpen] = useState(false);
 
   const verifyPDF = useVerifyPDF();
   const verifyXML = useVerifyXML();
@@ -74,6 +84,7 @@ export function VerifyPage() {
       });
 
       setPdfResult(result);
+      setPdfDialogOpen(true); // Modal'ı aç
 
       if (result.valid) {
         toast.success('PDF Doğrulama Başarılı!', {
@@ -84,6 +95,9 @@ export function VerifyPage() {
           description: 'İmza geçersiz veya sorunlar tespit edildi.',
         });
       }
+      
+      // İşlem tamamlandı, dosya seçimini temizle
+      setPdfFile(null);
     } catch (error) {
       toast.error('PDF Doğrulama Hatası!', {
         description: (error as any)?.message || 'PDF doğrulama sırasında bir hata oluştu.',
@@ -105,6 +119,7 @@ export function VerifyPage() {
       });
 
       setXmlResult(result);
+      setXmlDialogOpen(true); // Modal'ı aç
 
       if (result.valid) {
         toast.success('XML Doğrulama Başarılı!', {
@@ -115,6 +130,10 @@ export function VerifyPage() {
           description: 'İmza geçersiz veya sorunlar tespit edildi.',
         });
       }
+      
+      // İşlem tamamlandı, dosya seçimlerini temizle
+      setXmlFile(null);
+      setXmlOriginalFile(null);
     } catch (error) {
       toast.error('XML Doğrulama Hatası!', {
         description: (error as any)?.message || 'XML doğrulama sırasında bir hata oluştu.',
@@ -136,6 +155,7 @@ export function VerifyPage() {
       });
 
       setTimestampResult(result);
+      setTimestampDialogOpen(true); // Modal'ı aç
 
       if (result.valid) {
         toast.success('Zaman Damgası Doğrulama Başarılı!', {
@@ -146,6 +166,10 @@ export function VerifyPage() {
           description: 'Zaman damgası geçersiz veya sorunlar tespit edildi.',
         });
       }
+      
+      // İşlem tamamlandı, dosya seçimlerini temizle
+      setTimestampFile(null);
+      setTimestampOriginalData(null);
     } catch (error) {
       toast.error('Zaman Damgası Doğrulama Hatası!', {
         description: (error as any)?.message || 'Zaman damgası doğrulama sırasında bir hata oluştu.',
@@ -154,151 +178,277 @@ export function VerifyPage() {
     }
   };
 
-  // Render Verification Result
+  // Render Verification Result (for modal)
   const renderVerificationResult = (result: VerificationResult | null) => {
     if (!result) return null;
 
     return (
-      <Alert className={result.valid ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-red-500 bg-red-50 dark:bg-red-950'}>
-        <div className="flex items-start gap-3">
-          {result.valid ? (
-            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
-          ) : (
-            <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
+      <div className="space-y-4">
+        {/* Genel Bilgiler */}
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {result.signatureType && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-xs font-medium text-foreground/60 mb-1.5">İmza Tipi</p>
+              <p className="text-sm font-semibold text-foreground">{result.signatureType}</p>
+            </div>
           )}
-          <div className="flex-1 space-y-2">
-            <AlertTitle className="text-base">
-              {result.valid ? 'Doğrulama Başarılı' : 'Doğrulama Başarısız'}
-            </AlertTitle>
-            <AlertDescription>
-              <div className="space-y-2">
-                <p><strong>Durum:</strong> {result.status}</p>
-                {result.signatureCount !== undefined && (
-                  <p><strong>İmza Sayısı:</strong> {result.signatureCount}</p>
-                )}
-                {result.verificationTime && (
-                  <p><strong>Doğrulama Zamanı:</strong> {new Date(result.verificationTime).toLocaleString('tr-TR')}</p>
-                )}
-                
-                {result.signatures && result.signatures.length > 0 && (
-                  <div className="mt-3">
-                    <p className="font-semibold mb-2">İmza Detayları:</p>
-                    {result.signatures.map((sig, idx) => (
-                      <div key={idx} className="ml-4 mb-2 p-2 bg-white/50 dark:bg-black/20 rounded">
-                        <p className="text-sm">
-                          <strong>İmza #{idx + 1}:</strong>
-                        </p>
-                        {sig.signerName && <p className="text-sm">İmzalayan: {sig.signerName}</p>}
-                        {sig.signingTime && <p className="text-sm">İmza Zamanı: {new Date(sig.signingTime).toLocaleString('tr-TR')}</p>}
-                        {sig.signatureLevel && <p className="text-sm">Seviye: {sig.signatureLevel}</p>}
-                        <div className="flex gap-2 mt-1">
-                          {sig.valid !== undefined && (
-                            <Badge variant={sig.valid ? 'success' : 'destructive'} className="text-xs">
-                              İmza: {sig.valid ? 'Geçerli' : 'Geçersiz'}
-                            </Badge>
-                          )}
-                          {sig.certificateValid !== undefined && (
-                            <Badge variant={sig.certificateValid ? 'success' : 'destructive'} className="text-xs">
-                              Sertifika: {sig.certificateValid ? 'Geçerli' : 'Geçersiz'}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {result.errors && result.errors.length > 0 && (
-                  <div className="mt-3">
-                    <p className="font-semibold text-red-600 dark:text-red-400">Hatalar:</p>
-                    <ul className="list-disc list-inside text-sm ml-2">
-                      {result.errors.map((error, idx) => (
-                        <li key={idx}>{error}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {result.warnings && result.warnings.length > 0 && (
-                  <div className="mt-3">
-                    <p className="font-semibold text-yellow-600 dark:text-yellow-400">Uyarılar:</p>
-                    <ul className="list-disc list-inside text-sm ml-2">
-                      {result.warnings.map((warning, idx) => (
-                        <li key={idx}>{warning}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </AlertDescription>
-          </div>
+          {result.signatureCount !== undefined && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-xs font-medium text-foreground/60 mb-1.5">İmza Sayısı</p>
+              <p className="text-sm font-semibold text-foreground">{result.signatureCount}</p>
+            </div>
+          )}
+          {result.verificationTime && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-xs font-medium text-foreground/60 mb-1.5">Doğrulama Zamanı</p>
+              <p className="text-sm font-semibold text-foreground">
+                {new Date(result.verificationTime).toLocaleString('tr-TR')}
+              </p>
+            </div>
+          )}
         </div>
-      </Alert>
-    );
-  };
 
-  // Render Timestamp Result
-  const renderTimestampResult = (result: TimestampVerificationResult | null) => {
-    if (!result) return null;
+        {/* İmza Detayları */}
+        {result.signatures && result.signatures.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-foreground">İmza Detayları</h3>
+            {result.signatures.map((sig, idx) => (
+              <div key={idx} className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold text-foreground">İmza #{idx + 1}</p>
+                  <Badge variant={sig.valid ? 'default' : 'destructive'}>
+                    {sig.valid ? 'Geçerli' : 'Geçersiz'}
+                  </Badge>
+                </div>
 
-    return (
-      <Alert className={result.valid ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-red-500 bg-red-50 dark:bg-red-950'}>
-        <div className="flex items-start gap-3">
-          {result.valid ? (
-            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
-          ) : (
-            <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
-          )}
-          <div className="flex-1 space-y-2">
-            <AlertTitle className="text-base">
-              {result.valid ? 'Zaman Damgası Geçerli' : 'Zaman Damgası Geçersiz'}
-            </AlertTitle>
-            <AlertDescription>
-              <div className="space-y-2">
-                <p><strong>Durum:</strong> {result.status}</p>
-                {result.timestampTime && (
-                  <p><strong>Zaman Damgası:</strong> {new Date(result.timestampTime).toLocaleString('tr-TR')}</p>
-                )}
-                {result.tsaName && (
-                  <p><strong>TSA:</strong> {result.tsaName}</p>
-                )}
-                {result.digestAlgorithm && (
-                  <p><strong>Algoritma:</strong> {result.digestAlgorithm}</p>
-                )}
-                {result.verificationTime && (
-                  <p><strong>Doğrulama Zamanı:</strong> {new Date(result.verificationTime).toLocaleString('tr-TR')}</p>
-                )}
+                <div className="grid gap-2 md:grid-cols-2">
+                  {sig.signatureLevel && (
+                    <div>
+                      <span className="text-xs text-foreground/60">Seviye: </span>
+                      <span className="text-sm font-medium">{sig.signatureLevel}</span>
+                    </div>
+                  )}
+                  {sig.signatureFormat && (
+                    <div>
+                      <span className="text-xs text-foreground/60">Format: </span>
+                      <span className="text-sm font-medium">{sig.signatureFormat}</span>
+                    </div>
+                  )}
+                  {sig.signingTime && (
+                    <div>
+                      <span className="text-xs text-foreground/60">İmza Zamanı: </span>
+                      <span className="text-sm font-medium">
+                        {new Date(sig.signingTime).toLocaleString('tr-TR')}
+                      </span>
+                    </div>
+                  )}
+                  {sig.signatureAlgorithm && (
+                    <div>
+                      <span className="text-xs text-foreground/60">İmza Algoritması: </span>
+                      <span className="text-sm font-medium">{sig.signatureAlgorithm}</span>
+                    </div>
+                  )}
+                </div>
 
-                {result.tsaCertificate && (
-                  <div className="mt-3">
-                    <p className="font-semibold mb-1">TSA Sertifikası:</p>
-                    <div className="ml-4 text-sm">
-                      {result.tsaCertificate.subjectDN && <p>DN: {result.tsaCertificate.subjectDN}</p>}
-                      {result.tsaCertificate.notBefore && (
-                        <p>Geçerlilik Başlangıcı: {new Date(result.tsaCertificate.notBefore).toLocaleString('tr-TR')}</p>
+                {/* Sertifika Bilgisi */}
+                {sig.signerCertificate && (
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-xs font-medium text-foreground/60 mb-2">İmzalayan Sertifikası</p>
+                    <div className="space-y-1 text-sm">
+                      {sig.signerCertificate.commonName && (
+                        <p><span className="text-foreground/60">İsim:</span> {sig.signerCertificate.commonName}</p>
                       )}
-                      {result.tsaCertificate.notAfter && (
-                        <p>Geçerlilik Bitişi: {new Date(result.tsaCertificate.notAfter).toLocaleString('tr-TR')}</p>
+                      {sig.signerCertificate.serialNumber && (
+                        <p className="font-mono text-xs"><span className="text-foreground/60">Seri No:</span> {sig.signerCertificate.serialNumber}</p>
+                      )}
+                      {sig.signerCertificate.notAfter && (
+                        <p><span className="text-foreground/60">Geçerlilik:</span> {new Date(sig.signerCertificate.notAfter).toLocaleDateString('tr-TR')}</p>
                       )}
                     </div>
                   </div>
                 )}
 
-                {result.errors && result.errors.length > 0 && (
-                  <div className="mt-3">
-                    <p className="font-semibold text-red-600 dark:text-red-400">Hatalar:</p>
-                    <ul className="list-disc list-inside text-sm ml-2">
-                      {result.errors.map((error, idx) => (
-                        <li key={idx}>{error}</li>
+                {/* Validation Errors */}
+                {sig.validationErrors && sig.validationErrors.length > 0 && (
+                  <div className="rounded-lg border-2 border-red-500/60 bg-red-500/5 dark:bg-red-500/10 p-3">
+                    <p className="text-xs font-bold text-red-600 dark:text-red-400 mb-2">Hatalar:</p>
+                    <ul className="space-y-1">
+                      {sig.validationErrors.map((error, i) => (
+                        <li key={i} className="text-xs text-foreground/90 flex items-start gap-2">
+                          <span className="text-red-600 dark:text-red-400 mt-0.5">•</span>
+                          <span>{error}</span>
+                        </li>
                       ))}
                     </ul>
                   </div>
                 )}
               </div>
-            </AlertDescription>
+            ))}
           </div>
+        )}
+
+        {/* Global Errors */}
+        {result.errors && result.errors.length > 0 && (
+          <div className="rounded-lg border-2 border-red-500/60 bg-red-500/5 dark:bg-red-500/10 p-4">
+            <p className="text-sm font-bold text-red-600 dark:text-red-400 mb-3 flex items-center gap-2">
+              <XCircle className="h-4 w-4" />
+              Doğrulama Hataları
+            </p>
+            <ul className="space-y-2">
+              {result.errors.map((error, idx) => (
+                <li key={idx} className="flex items-start gap-2 text-sm text-foreground/90">
+                  <span className="text-red-600 dark:text-red-400 mt-0.5 font-bold">•</span>
+                  <span>{error}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Global Warnings */}
+        {result.warnings && result.warnings.length > 0 && (
+          <div className="rounded-lg border-2 border-orange-500/60 bg-orange-500/5 dark:bg-orange-500/10 p-4">
+            <p className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-3 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              Uyarılar
+            </p>
+            <ul className="space-y-2">
+              {result.warnings.map((warning, idx) => (
+                <li key={idx} className="flex items-start gap-2 text-sm text-foreground/90">
+                  <span className="text-orange-600 dark:text-orange-400 mt-0.5 font-bold">•</span>
+                  <span>{warning}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render Timestamp Result (for modal)
+  const renderTimestampResult = (result: TimestampVerificationResult | null) => {
+    if (!result) return null;
+
+    return (
+      <div className="space-y-4">
+        {/* Genel Bilgiler */}
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {result.timestampTime && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-xs font-medium text-foreground/60 mb-1.5">Zaman Damgası</p>
+              <p className="text-sm font-semibold text-foreground">
+                {new Date(result.timestampTime).toLocaleString('tr-TR', {
+                  dateStyle: 'full',
+                  timeStyle: 'medium'
+                })}
+              </p>
+            </div>
+          )}
+          {result.digestAlgorithm && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-xs font-medium text-foreground/60 mb-1.5">Digest Algoritması</p>
+              <p className="text-sm font-semibold text-foreground">{result.digestAlgorithm}</p>
+            </div>
+          )}
+          {result.verificationTime && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-xs font-medium text-foreground/60 mb-1.5">Doğrulama Zamanı</p>
+              <p className="text-sm font-semibold text-foreground">
+                {new Date(result.verificationTime).toLocaleString('tr-TR')}
+              </p>
+            </div>
+          )}
         </div>
-      </Alert>
+
+        {/* TSA Information */}
+        {result.tsaName && (
+          <div className="rounded-lg border border-border bg-muted/20 p-4">
+            <p className="text-xs font-bold text-foreground mb-2">Zaman Damgası Otoritesi (TSA)</p>
+            <p className="text-sm font-mono text-foreground/90 break-all">{result.tsaName}</p>
+          </div>
+        )}
+
+        {/* TSA Sertifikası */}
+        {result.tsaCertificate && (
+          <div className="rounded-lg border border-border bg-muted/20 p-4">
+            <p className="text-xs font-bold text-foreground mb-3">TSA Sertifikası</p>
+            <div className="space-y-2 text-sm">
+              {result.tsaCertificate.commonName && (
+                <p><span className="text-foreground/60">İsim:</span> {result.tsaCertificate.commonName}</p>
+              )}
+              {result.tsaCertificate.subject && (
+                <p className="font-mono text-xs"><span className="text-foreground/60">Subject:</span> {result.tsaCertificate.subject}</p>
+              )}
+              {result.tsaCertificate.serialNumber && (
+                <p className="font-mono text-xs"><span className="text-foreground/60">Seri No:</span> {result.tsaCertificate.serialNumber}</p>
+              )}
+              <div className="grid gap-2 md:grid-cols-2 mt-2">
+                {result.tsaCertificate.notBefore && (
+                  <div>
+                    <span className="text-xs text-foreground/60">Geçerlilik Başlangıcı: </span>
+                    <span className="text-sm font-medium">
+                      {new Date(result.tsaCertificate.notBefore).toLocaleDateString('tr-TR')}
+                    </span>
+                  </div>
+                )}
+                {result.tsaCertificate.notAfter && (
+                  <div>
+                    <span className="text-xs text-foreground/60">Geçerlilik Bitişi: </span>
+                    <span className="text-sm font-medium">
+                      {new Date(result.tsaCertificate.notAfter).toLocaleDateString('tr-TR')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Message Imprint */}
+        {result.messageImprint && (
+          <div className="rounded-lg border border-border bg-muted/20 p-4">
+            <p className="text-xs font-bold text-foreground mb-2">Message Imprint</p>
+            <p className="text-xs font-mono text-foreground/80 break-all">{result.messageImprint}</p>
+          </div>
+        )}
+
+        {/* Errors */}
+        {result.errors && result.errors.length > 0 && (
+          <div className="rounded-lg border-2 border-red-500/60 bg-red-500/5 dark:bg-red-500/10 p-4">
+            <p className="text-sm font-bold text-red-600 dark:text-red-400 mb-3 flex items-center gap-2">
+              <XCircle className="h-4 w-4" />
+              Doğrulama Hataları
+            </p>
+            <ul className="space-y-2">
+              {result.errors.map((error, idx) => (
+                <li key={idx} className="flex items-start gap-2 text-sm text-foreground/90">
+                  <span className="text-red-600 dark:text-red-400 mt-0.5 font-bold">•</span>
+                  <span>{error}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Warnings */}
+        {result.warnings && result.warnings.length > 0 && (
+          <div className="rounded-lg border-2 border-orange-500/60 bg-orange-500/5 dark:bg-orange-500/10 p-4">
+            <p className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-3 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              Uyarılar
+            </p>
+            <ul className="space-y-2">
+              {result.warnings.map((warning, idx) => (
+                <li key={idx} className="flex items-start gap-2 text-sm text-foreground/90">
+                  <span className="text-orange-600 dark:text-orange-400 mt-0.5 font-bold">•</span>
+                  <span>{warning}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -344,15 +494,15 @@ export function VerifyPage() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="pdf" className="w-full">
+      <Tabs defaultValue="xml" className="w-full">
         <TabsList className="grid w-full grid-cols-3 h-14">
-          <TabsTrigger value="pdf" className="gap-2 py-3">
-            <FileText className="h-4 w-4" />
-            PDF
-          </TabsTrigger>
           <TabsTrigger value="xml" className="gap-2 py-3">
             <FileCode className="h-4 w-4" />
             XML
+          </TabsTrigger>
+          <TabsTrigger value="pdf" className="gap-2 py-3">
+            <FileText className="h-4 w-4" />
+            PDF
           </TabsTrigger>
           <TabsTrigger value="timestamp" className="gap-2 py-3">
             <Clock className="h-4 w-4" />
@@ -421,10 +571,6 @@ export function VerifyPage() {
                 </CardContent>
               </Card>
 
-              {/* PDF Result */}
-              {pdfResult && (
-                <div>{renderVerificationResult(pdfResult)}</div>
-              )}
             </div>
 
             {/* PDF Info */}
@@ -554,10 +700,6 @@ export function VerifyPage() {
                 </CardContent>
               </Card>
 
-              {/* XML Result */}
-              {xmlResult && (
-                <div>{renderVerificationResult(xmlResult)}</div>
-              )}
             </div>
 
             {/* XML Info */}
@@ -673,10 +815,6 @@ export function VerifyPage() {
                 </CardContent>
               </Card>
 
-              {/* Timestamp Result */}
-              {timestampResult && (
-                <div>{renderTimestampResult(timestampResult)}</div>
-              )}
             </div>
 
             {/* Timestamp Info */}
@@ -729,6 +867,144 @@ export function VerifyPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* PDF Verification Result Modal */}
+      <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] [&>button]:hidden p-0 gap-0">
+          {pdfResult && (
+            <div className="flex flex-col max-h-[85vh]">
+              {/* Header - Fixed */}
+              <div className="flex-shrink-0 p-6 border-b relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setPdfDialogOpen(false)}
+                  className="absolute right-6 top-6 h-8 w-8 rounded-full z-10"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+
+                <DialogHeader>
+                  <DialogTitle className={`flex items-center gap-2 text-xl pr-12 ${pdfResult.valid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                    {pdfResult.valid ? (
+                      <>
+                        <CheckCircle2 className="h-6 w-6" />
+                        PDF İmza Geçerli
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-6 w-6" />
+                        PDF İmza Geçersiz
+                      </>
+                    )}
+                  </DialogTitle>
+                  <DialogDescription className="text-base">
+                    {pdfResult.status}
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
+
+              {/* Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {renderVerificationResult(pdfResult)}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* XML Verification Result Modal */}
+      <Dialog open={xmlDialogOpen} onOpenChange={setXmlDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] [&>button]:hidden p-0 gap-0">
+          {xmlResult && (
+            <div className="flex flex-col max-h-[85vh]">
+              {/* Header - Fixed */}
+              <div className="flex-shrink-0 p-6 border-b relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setXmlDialogOpen(false)}
+                  className="absolute right-6 top-6 h-8 w-8 rounded-full z-10"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+
+                <DialogHeader>
+                  <DialogTitle className={`flex items-center gap-2 text-xl pr-12 ${xmlResult.valid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                    {xmlResult.valid ? (
+                      <>
+                        <CheckCircle2 className="h-6 w-6" />
+                        XML İmza Geçerli
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-6 w-6" />
+                        XML İmza Geçersiz
+                      </>
+                    )}
+                  </DialogTitle>
+                  <DialogDescription className="text-base">
+                    {xmlResult.status}
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
+
+              {/* Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {renderVerificationResult(xmlResult)}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Timestamp Verification Result Modal */}
+      <Dialog open={timestampDialogOpen} onOpenChange={setTimestampDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] [&>button]:hidden p-0 gap-0">
+          {timestampResult && (
+            <div className="flex flex-col max-h-[85vh]">
+              {/* Header - Fixed */}
+              <div className="flex-shrink-0 p-6 border-b relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setTimestampDialogOpen(false)}
+                  className="absolute right-6 top-6 h-8 w-8 rounded-full z-10"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+
+                <DialogHeader>
+                  <DialogTitle className={`flex items-center gap-2 text-xl pr-12 ${timestampResult.valid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                    {timestampResult.valid ? (
+                      <>
+                        <CheckCircle2 className="h-6 w-6" />
+                        Zaman Damgası Geçerli
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-6 w-6" />
+                        Zaman Damgası Geçersiz
+                      </>
+                    )}
+                  </DialogTitle>
+                  <DialogDescription className="text-base">
+                    {timestampResult.status}
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
+
+              {/* Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {renderTimestampResult(timestampResult)}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
