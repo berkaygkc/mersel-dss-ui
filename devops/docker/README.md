@@ -43,7 +43,7 @@ docker-compose --profile with-backend up -d
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| Sign UI | http://localhost:3001 | React web interface |
+| Sign UI | http://localhost:3001 | React web interface (container port: 8080) |
 | Health | http://localhost:3001/health | Health check |
 | Sign API | http://localhost:8085 | Backend API (with-backend profile) |
 
@@ -101,8 +101,8 @@ chmod +x unix/start.sh
 # Build image
 docker build -t sign-ui:local -f Dockerfile ../..
 
-# Run
-docker run -d -p 3001:80 --name sign-ui sign-ui:local
+# Run (map host 3001 to container 8080)
+docker run -d -p 3001:8080 --name sign-ui sign-ui:local
 
 # Test
 curl http://localhost:3001/health
@@ -174,7 +174,7 @@ docker-compose up -d --build sign-ui
 
 ```bash
 # Pull latest
-docker pull yourusername/dss-sign-ui:latest
+docker pull mersel/dss-sign-ui:latest
 
 # Recreate
 docker-compose up -d
@@ -214,7 +214,7 @@ location /api/ {
 # .env dosyası oluştur
 cat > .env << EOF
 VITE_API_BASE_URL=https://api.yourdomain.com
-DOCKERHUB_USERNAME=yourusername
+DOCKERHUB_USERNAME=mersel
 EOF
 ```
 
@@ -243,7 +243,7 @@ server {
     ssl_certificate_key /etc/nginx/ssl/key.pem;
 
     location / {
-        proxy_pass http://sign-ui:80;
+        proxy_pass http://sign-ui:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

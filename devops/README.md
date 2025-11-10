@@ -50,7 +50,7 @@ docker-compose up -d
 **Kullanım Durumu:** Minimal deployment
 
 ```bash
-docker run -d -p 3001:80 yourusername/dss-sign-ui:latest
+docker run -d -p 3001:8080 mersel/dss-sign-ui:latest
 ```
 
 **Avantajları:**
@@ -139,7 +139,7 @@ docker-compose exec sign-ui tail -f /var/log/nginx/access.log
 
 ```bash
 # Image backup
-docker save yourusername/dss-sign-ui:latest | gzip > sign-ui-backup.tar.gz
+docker save mersel/dss-sign-ui:latest | gzip > sign-ui-backup.tar.gz
 
 # Restore
 gunzip -c sign-ui-backup.tar.gz | docker load
@@ -201,7 +201,7 @@ docker-compose build --build-arg VITE_API_BASE_URL=http://new-api:8085 sign-ui
 
 Sorun mu yaşıyorsunuz?
 1. [Docker README](docker/README.md)
-2. [GitHub Issues](https://github.com/yourusername/sign-ui/issues)
+2. [GitHub Issues](https://github.com/mersel/sign-ui/issues)
 3. [Main Documentation](../README.md)
 
 ---

@@ -60,7 +60,7 @@ Write-Host ""
 Write-Host "🎉 Sign UI Started!" -ForegroundColor Green
 Write-Host ""
 Write-Host "📍 Access Points:" -ForegroundColor Cyan
-Write-Host "   - Sign UI:     http://localhost:3001"
+Write-Host "   - Sign UI:     http://localhost:3001 (maps to container :8080)"
 Write-Host "   - Health:      http://localhost:3001/health"
 Write-Host ""
 Write-Host "📊 Useful Commands:" -ForegroundColor Cyan

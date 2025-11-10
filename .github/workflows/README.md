@@ -77,7 +77,7 @@ git commit -m "feat: yeni özellik"
 git push origin develop
 ```
 
-Bu `yourusername/dss-sign-ui:develop` image'ini oluşturur.
+Bu `mersel/dss-sign-ui:develop` image'ini oluşturur.
 
 #### 2. Production Release
 
@@ -93,10 +93,10 @@ git push origin v1.0.0
 ```
 
 Bu aşağıdaki image'leri oluşturur:
-- `yourusername/dss-sign-ui:latest`
-- `yourusername/dss-sign-ui:v1.0.0`
-- `yourusername/dss-sign-ui:1.0`
-- `yourusername/dss-sign-ui:1`
+- `mersel/dss-sign-ui:latest`
+- `mersel/dss-sign-ui:v1.0.0`
+- `mersel/dss-sign-ui:1.0`
+- `mersel/dss-sign-ui:1`
 
 #### 3. Manuel Çalıştırma
 
@@ -111,16 +111,16 @@ Build edilen image'leri çekmek için:
 
 ```bash
 # Latest version
-docker pull yourusername/dss-sign-ui:latest
+docker pull mersel/dss-sign-ui:latest
 
 # Specific version
-docker pull yourusername/dss-sign-ui:v1.0.0
+docker pull mersel/dss-sign-ui:v1.0.0
 
 # Development version
-docker pull yourusername/dss-sign-ui:develop
+docker pull mersel/dss-sign-ui:develop
 
 # Run
-docker run -d -p 3001:80 yourusername/dss-sign-ui:latest
+docker run -d -p 3001:8080 mersel/dss-sign-ui:latest
 ```
 
 ### Workflow Özellikleri
@@ -185,12 +185,12 @@ docker run -d -p 3001:80 yourusername/dss-sign-ui:latest
 #### Image Çekilemiyor
 
 1. **Docker Hub'da image'i kontrol edin**
-   - https://hub.docker.com/r/yourusername/dss-sign-ui
+   - https://hub.docker.com/r/mersel/dss-sign-ui
    - Image public mi?
 
 2. **Doğru tag'i kullanın**
    ```bash
-   docker pull yourusername/dss-sign-ui:latest
+   docker pull mersel/dss-sign-ui:latest
    ```
 
 ### Best Practices
