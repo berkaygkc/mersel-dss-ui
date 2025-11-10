@@ -44,16 +44,12 @@ export function VerifyPage() {
   // PDF state
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfLevel, setPdfLevel] = useState<VerificationLevel>(VerificationLevel.SIMPLE);
-  const [pdfCheckRevocation, setPdfCheckRevocation] = useState(false);
-  const [pdfValidateTimestamp, setPdfValidateTimestamp] = useState(false);
   const [pdfResult, setPdfResult] = useState<VerificationResult | null>(null);
 
   // XML state
   const [xmlFile, setXmlFile] = useState<File | null>(null);
   const [xmlOriginalFile, setXmlOriginalFile] = useState<File | null>(null);
   const [xmlLevel, setXmlLevel] = useState<VerificationLevel>(VerificationLevel.SIMPLE);
-  const [xmlCheckRevocation, setXmlCheckRevocation] = useState(false);
-  const [xmlValidateTimestamp, setXmlValidateTimestamp] = useState(false);
   const [xmlResult, setXmlResult] = useState<VerificationResult | null>(null);
 
   // Timestamp state
@@ -75,8 +71,6 @@ export function VerifyPage() {
       const result = await verifyPDF.mutateAsync({
         signedDocument: pdfFile,
         level: pdfLevel,
-        checkRevocation: pdfCheckRevocation,
-        validateTimestamp: pdfValidateTimestamp,
       });
 
       setPdfResult(result);
@@ -108,8 +102,6 @@ export function VerifyPage() {
         signedDocument: xmlFile,
         originalDocument: xmlOriginalFile || undefined,
         level: xmlLevel,
-        checkRevocation: xmlCheckRevocation,
-        validateTimestamp: xmlValidateTimestamp,
       });
 
       setXmlResult(result);
@@ -417,30 +409,6 @@ export function VerifyPage() {
                       </Select>
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="pdf-revocation"
-                          checked={pdfCheckRevocation}
-                          onCheckedChange={(checked) => setPdfCheckRevocation(checked as boolean)}
-                        />
-                        <Label htmlFor="pdf-revocation" className="cursor-pointer text-sm font-normal">
-                          İptal durumu kontrolü (OCSP/CRL)
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="pdf-timestamp"
-                          checked={pdfValidateTimestamp}
-                          onCheckedChange={(checked) => setPdfValidateTimestamp(checked as boolean)}
-                        />
-                        <Label htmlFor="pdf-timestamp" className="cursor-pointer text-sm font-normal">
-                          Zaman damgası doğrulama
-                        </Label>
-                      </div>
-                    </div>
-
                     <Button
                       type="submit"
                       className="w-full"
@@ -572,30 +540,6 @@ export function VerifyPage() {
                           <SelectItem value={VerificationLevel.COMPREHENSIVE}>Kapsamlı (Detaylı)</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="xml-revocation"
-                          checked={xmlCheckRevocation}
-                          onCheckedChange={(checked) => setXmlCheckRevocation(checked as boolean)}
-                        />
-                        <Label htmlFor="xml-revocation" className="cursor-pointer text-sm font-normal">
-                          İptal durumu kontrolü (OCSP/CRL)
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="xml-timestamp"
-                          checked={xmlValidateTimestamp}
-                          onCheckedChange={(checked) => setXmlValidateTimestamp(checked as boolean)}
-                        />
-                        <Label htmlFor="xml-timestamp" className="cursor-pointer text-sm font-normal">
-                          Zaman damgası doğrulama
-                        </Label>
-                      </div>
                     </div>
 
                     <Button

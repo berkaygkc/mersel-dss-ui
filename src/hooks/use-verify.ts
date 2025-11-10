@@ -11,23 +11,85 @@ export enum VerificationLevel {
   COMPREHENSIVE = 'COMPREHENSIVE',
 }
 
+export interface CertificateInfo {
+  subject?: string;
+  commonName?: string;
+  issuerDN?: string;
+  serialNumber?: string;
+  subjectSerialNumber?: string;
+  notBefore?: string;
+  notAfter?: string;
+  keyUsage?: string;
+  publicKeyAlgorithm?: string;
+  publicKeySize?: number;
+  signatureAlgorithm?: string;
+  trusted?: boolean;
+  expired?: boolean;
+  valid?: boolean;
+  revoked?: boolean;
+  revocationReason?: string;
+  revocationTime?: string;
+  revocationDate?: string;
+}
+
+export interface TimestampInfo {
+  timestampTime?: string;
+  tsaName?: string;
+  digestAlgorithm?: string;
+  valid?: boolean;
+  certificateValid?: boolean;
+  errors?: string[];
+}
+
+export interface QualificationDetails {
+  qualificationLevel?: string;
+  qualificationName?: string;
+}
+
+export interface ValidationDetails {
+  signatureIntact?: boolean;
+  certificateChainValid?: boolean;
+  certificateNotExpired?: boolean;
+  certificateNotRevoked?: boolean;
+  trustAnchorReached?: boolean;
+  timestampValid?: boolean;
+  cryptographicVerificationSuccessful?: boolean;
+  revocationCheckPerformed?: boolean;
+  additionalDetails?: Record<string, string>;
+}
+
+export interface SignatureInfo {
+  signatureId?: string;
+  valid?: boolean;
+  signatureFormat?: string;
+  signatureLevel?: string;
+  signingTime?: string;
+  claimedSigningTime?: string;
+  signerCertificate?: CertificateInfo;
+  certificateChain?: CertificateInfo[];
+  timestampInfo?: TimestampInfo;
+  signatureAlgorithm?: string;
+  digestAlgorithm?: string;
+  validationErrors?: string[];
+  validationWarnings?: string[];
+  indication?: string;
+  subIndication?: string;
+  qualificationDetails?: QualificationDetails;
+  timestampCount?: number;
+  policyIdentifier?: string;
+  validationDetails?: ValidationDetails;
+}
+
 export interface VerificationResult {
   valid: boolean;
   status: string;
+  signatureType?: string;
   signatureCount?: number;
   signatures?: SignatureInfo[];
   errors?: string[];
   warnings?: string[];
   verificationTime?: string;
-}
-
-export interface SignatureInfo {
-  signatureLevel?: string;
-  signingTime?: string;
-  signerName?: string;
-  valid?: boolean;
-  certificateValid?: boolean;
-  timestampValid?: boolean;
+  validationDetails?: ValidationDetails;
 }
 
 export interface TimestampVerificationResult {
@@ -37,28 +99,21 @@ export interface TimestampVerificationResult {
   tsaName?: string;
   digestAlgorithm?: string;
   messageImprint?: string;
-  tsaCertificate?: {
-    subjectDN?: string;
-    notBefore?: string;
-    notAfter?: string;
-  };
+  tsaCertificate?: CertificateInfo;
   verificationTime?: string;
   errors?: string[];
+  warnings?: string[];
 }
 
 export interface VerifyPadesDto {
   signedDocument: File;
   level?: VerificationLevel;
-  checkRevocation?: boolean;
-  validateTimestamp?: boolean;
 }
 
 export interface VerifyXadesDto {
   signedDocument: File;
   originalDocument?: File;
   level?: VerificationLevel;
-  checkRevocation?: boolean;
-  validateTimestamp?: boolean;
 }
 
 export interface VerifyTimestampDto {
@@ -74,21 +129,10 @@ export const useVerifyPDF = () => {
       const formData = new FormData();
       formData.append('signedDocument', data.signedDocument);
       
-      if (data.level) {
-        formData.append('level', data.level);
-      }
-      if (data.checkRevocation !== undefined) {
-        formData.append('checkRevocation', String(data.checkRevocation));
-      }
-      if (data.validateTimestamp !== undefined) {
-        formData.append('validateTimestamp', String(data.validateTimestamp));
-      }
+      // Yeni unified endpoint'e level parametresini gönder
+      formData.append('level', data.level || VerificationLevel.SIMPLE);
 
-      const endpoint = data.level === VerificationLevel.COMPREHENSIVE 
-        ? `${VERIFY_API_URL}/api/v1/verify/pades`
-        : `${VERIFY_API_URL}/api/v1/verify/pades/simple`;
-
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${VERIFY_API_URL}/api/v1/verify/pades`, {
         method: 'POST',
         body: formData,
       });
@@ -113,21 +157,11 @@ export const useVerifyXML = () => {
       if (data.originalDocument) {
         formData.append('originalDocument', data.originalDocument);
       }
-      if (data.level) {
-        formData.append('level', data.level);
-      }
-      if (data.checkRevocation !== undefined) {
-        formData.append('checkRevocation', String(data.checkRevocation));
-      }
-      if (data.validateTimestamp !== undefined) {
-        formData.append('validateTimestamp', String(data.validateTimestamp));
-      }
+      
+      // Yeni unified endpoint'e level parametresini gönder
+      formData.append('level', data.level || VerificationLevel.SIMPLE);
 
-      const endpoint = data.level === VerificationLevel.COMPREHENSIVE 
-        ? `${VERIFY_API_URL}/api/v1/verify/xades`
-        : `${VERIFY_API_URL}/api/v1/verify/xades/simple`;
-
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${VERIFY_API_URL}/api/v1/verify/xades`, {
         method: 'POST',
         body: formData,
       });
@@ -147,14 +181,14 @@ export const useVerifyTimestamp = () => {
   return useMutation({
     mutationFn: async (data: VerifyTimestampDto) => {
       const formData = new FormData();
-      formData.append('timestampToken', data.timestampToken);
+      formData.append('timestampFile', data.timestampToken); // Backend 'timestampFile' bekliyor
       
       if (data.originalData) {
         formData.append('originalData', data.originalData);
       }
-      if (data.validateCertificate !== undefined) {
-        formData.append('validateCertificate', String(data.validateCertificate));
-      }
+      
+      // validateCertificate parametresini gönder (default: true)
+      formData.append('validateCertificate', String(data.validateCertificate !== false));
 
       const response = await fetch(`${VERIFY_API_URL}/api/v1/verify/timestamp`, {
         method: 'POST',
