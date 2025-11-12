@@ -4,6 +4,7 @@ import axios from 'axios';
 
 // Configure API client
 import '@/lib/api-config';
+import { SIGN_API_URL } from '@/lib/runtime-config';
 
 // Get Timestamp - Use Axios directly for binary response
 export const useGetTimestamp = () => {
@@ -13,7 +14,7 @@ export const useGetTimestamp = () => {
       formData.append('document', data.document);
       
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8085'}/api/timestamp/get`,
+        `${SIGN_API_URL()}/api/timestamp/get`,
         formData,
         {
           params: {

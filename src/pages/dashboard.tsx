@@ -14,6 +14,7 @@ import {
   PenTool,
   ShieldAlert,
 } from 'lucide-react';
+import { SIGN_API_URL } from '@/lib/runtime-config';
 
 export function Dashboard() {
   const { data: certResponse, isLoading: certLoading } = useCertificates();
@@ -255,7 +256,7 @@ export function Dashboard() {
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Backend URL:</span>
                 <span className="font-mono font-medium text-xs">
-                  {import.meta.env.VITE_API_URL || 'http://localhost:8085'}
+                  {SIGN_API_URL()}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
