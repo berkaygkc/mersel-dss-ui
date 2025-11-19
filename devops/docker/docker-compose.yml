@@ -9,12 +9,13 @@ services:
     build:
       context: ../../
       dockerfile: devops/docker/Dockerfile
+      args:
+        # Kubernetes ortamına yapılacak olan build için boş bırakılmalı, yoksa Runtime ortamında public/config.js overwrite edilmesi bir işe yaramaz
+        - VITE_SIGN_API_URL=${VITE_SIGN_API_URL:-} 
+        - VITE_VERIFY_API_URL=${VITE_VERIFY_API_URL:-}
     container_name: sign-ui
     ports:
       - "3001:8080"
-    environment:
-      # API Configuration (injected at runtime via nginx)
-      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8085}
     networks:
       - app-network
     restart: unless-stopped
@@ -24,8 +25,8 @@ services:
       timeout: 3s
       retries: 3
       start_period: 10s
-    depends_on:
-      - sign-api
+    # depends_on:
+    #   - sign-api
 
   # Sign API Service (optional - can use external)
   sign-api:
@@ -43,7 +44,7 @@ services:
       - app-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8085/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -76,4 +77,5 @@ networks:
 
 volumes:
   api-logs:
+
 

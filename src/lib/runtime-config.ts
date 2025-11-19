@@ -18,8 +18,8 @@ declare global {
 // Get runtime config with fallback to defaults
 export const getRuntimeConfig = (): AppConfig => {
   return {
-    SIGN_API_URL: window.APP_CONFIG?.SIGN_API_URL || DEFAULT_SIGN_API_URL,
-    VERIFY_API_URL: window.APP_CONFIG?.VERIFY_API_URL || DEFAULT_VERIFY_API_URL,
+    SIGN_API_URL: import.meta.env.VITE_SIGN_API_URL || window.APP_CONFIG?.SIGN_API_URL || DEFAULT_SIGN_API_URL,
+    VERIFY_API_URL: import.meta.env.VITE_VERIFY_API_URL || window.APP_CONFIG?.VERIFY_API_URL || DEFAULT_VERIFY_API_URL,
   };
 };
 

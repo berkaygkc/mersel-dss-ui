@@ -2,6 +2,7 @@
 # Stage 1: Build
 FROM node:18-alpine AS builder
 
+
 LABEL maintainer="Mersel <info@mersel.io>"
 LABEL description="Mersel DSS Sign UI - React Build Stage"
 
@@ -15,6 +16,13 @@ RUN yarn install --frozen-lockfile --production=false
 
 # Copy source code
 COPY . .
+
+ARG VITE_SIGN_API_URL
+ARG VITE_VERIFY_API_URL
+
+# Set environment variables
+ENV VITE_SIGN_API_URL=${VITE_SIGN_API_URL}
+ENV VITE_VERIFY_API_URL=${VITE_VERIFY_API_URL}
 
 # Build application
 RUN yarn build
@@ -41,11 +49,11 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Create nginx user and set permissions
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
-    chown -R nginx:nginx /var/cache/nginx && \
-    chown -R nginx:nginx /var/log/nginx && \
-    chown -R nginx:nginx /etc/nginx/conf.d && \
-    touch /var/run/nginx.pid && \
-    chown -R nginx:nginx /var/run/nginx.pid
+  chown -R nginx:nginx /var/cache/nginx && \
+  chown -R nginx:nginx /var/log/nginx && \
+  chown -R nginx:nginx /etc/nginx/conf.d && \
+  touch /var/run/nginx.pid && \
+  chown -R nginx:nginx /var/run/nginx.pid
 
 # Switch to non-root user
 USER nginx
