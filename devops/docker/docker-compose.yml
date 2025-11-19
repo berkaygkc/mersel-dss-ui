@@ -25,8 +25,8 @@ services:
       timeout: 3s
       retries: 3
       start_period: 10s
-    # depends_on:
-    #   - sign-api
+    depends_on:
+      - sign-api
 
   # Sign API Service (optional - can use external)
   sign-api:

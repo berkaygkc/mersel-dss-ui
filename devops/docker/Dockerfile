@@ -2,7 +2,6 @@
 # Stage 1: Build
 FROM node:18-alpine AS builder
 
-
 LABEL maintainer="Mersel <info@mersel.io>"
 LABEL description="Mersel DSS Sign UI - React Build Stage"
 
