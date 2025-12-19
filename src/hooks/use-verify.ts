@@ -32,6 +32,7 @@ export interface CertificateInfo {
 
 export interface TimestampInfo {
   timestampTime?: string;
+  timestampType?: string;
   tsaName?: string;
   digestAlgorithm?: string;
   valid?: boolean;
@@ -65,7 +66,7 @@ export interface SignatureInfo {
   claimedSigningTime?: string;
   signerCertificate?: CertificateInfo;
   certificateChain?: CertificateInfo[];
-  timestampInfo?: TimestampInfo;
+  timestamps?: TimestampInfo[];
   signatureAlgorithm?: string;
   digestAlgorithm?: string;
   validationErrors?: string[];
@@ -118,6 +119,12 @@ export interface VerifyTimestampDto {
   timestampToken: File;
   originalData?: File;
   validateCertificate?: boolean;
+}
+
+export interface VerifyCadesDto {
+  signedDocument: File;
+  originalDocument?: File;
+  level?: VerificationLevel;
 }
 
 // PAdES (PDF) Verification
@@ -199,6 +206,34 @@ export const useVerifyTimestamp = () => {
       }
 
       return response.json() as Promise<TimestampVerificationResult>;
+    },
+  });
+};
+
+// CAdES (.p7s) Verification
+export const useVerifyCAdES = () => {
+  return useMutation({
+    mutationFn: async (data: VerifyCadesDto) => {
+      const formData = new FormData();
+      formData.append('signedDocument', data.signedDocument);
+      
+      if (data.originalDocument) {
+        formData.append('originalDocument', data.originalDocument);
+      }
+      
+      formData.append('level', data.level || VerificationLevel.SIMPLE);
+
+      const response = await fetch(`${VERIFY_API_URL()}/api/v1/verify/cades`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'CAdES doğrulama başarısız oldu');
+      }
+
+      return response.json() as Promise<VerificationResult>;
     },
   });
 };

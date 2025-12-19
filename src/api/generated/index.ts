@@ -21,3 +21,7 @@ export { PadesControllerService } from './services/PadesControllerService';
 export { TBTakService } from './services/TBTakService';
 export { TimestampService } from './services/TimestampService';
 export { XadesControllerService } from './services/XadesControllerService';
+export { CadesControllerService } from './services/CadesControllerService';
+export type { TimestampType, SignCadesRequest } from './services/CadesControllerService';
+export { HashSignService } from './services/HashSignService';
+export type { SignHashRequest, SignHashResponse } from './services/HashSignService';

@@ -29,6 +29,7 @@ import {
   useVerifyPDF, 
   useVerifyXML, 
   useVerifyTimestamp,
+  useVerifyCAdES,
   VerificationLevel,
   type VerificationResult,
   type TimestampVerificationResult 
@@ -43,7 +44,8 @@ import {
   AlertCircle,
   XCircle,
   ShieldCheck,
-  X
+  X,
+  FileSignature
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -68,9 +70,17 @@ export function VerifyPage() {
   const [timestampResult, setTimestampResult] = useState<TimestampVerificationResult | null>(null);
   const [timestampDialogOpen, setTimestampDialogOpen] = useState(false);
 
+  // CAdES state
+  const [cadesFile, setCadesFile] = useState<File | null>(null);
+  const [cadesOriginalFile, setCadesOriginalFile] = useState<File | null>(null);
+  const [cadesLevel, setCadesLevel] = useState<VerificationLevel>(VerificationLevel.SIMPLE);
+  const [cadesResult, setCadesResult] = useState<VerificationResult | null>(null);
+  const [cadesDialogOpen, setCadesDialogOpen] = useState(false);
+
   const verifyPDF = useVerifyPDF();
   const verifyXML = useVerifyXML();
   const verifyTimestamp = useVerifyTimestamp();
+  const verifyCAdES = useVerifyCAdES();
 
   // PDF Verify Handler
   const handlePDFSubmit = async (e: React.FormEvent) => {
@@ -178,6 +188,41 @@ export function VerifyPage() {
     }
   };
 
+  // CAdES Verify Handler
+  const handleCAdESSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cadesFile) return;
+
+    try {
+      const result = await verifyCAdES.mutateAsync({
+        signedDocument: cadesFile,
+        originalDocument: cadesOriginalFile || undefined,
+        level: cadesLevel,
+      });
+
+      setCadesResult(result);
+      setCadesDialogOpen(true);
+
+      if (result.valid) {
+        toast.success('CAdES Doğrulama Başarılı!', {
+          description: `${cadesFile.name} doğrulandı. İmza geçerli.`,
+        });
+      } else {
+        toast.warning('CAdES Doğrulama Tamamlandı', {
+          description: 'İmza geçersiz veya sorunlar tespit edildi.',
+        });
+      }
+      
+      setCadesFile(null);
+      setCadesOriginalFile(null);
+    } catch (error) {
+      toast.error('CAdES Doğrulama Hatası!', {
+        description: (error as any)?.message || 'CAdES doğrulama sırasında bir hata oluştu.',
+      });
+      setCadesResult(null);
+    }
+  };
+
   // Render Verification Result (for modal)
   const renderVerificationResult = (result: VerificationResult | null) => {
     if (!result) return null;
@@ -264,6 +309,42 @@ export function VerifyPage() {
                       {sig.signerCertificate.notAfter && (
                         <p><span className="text-foreground/60">Geçerlilik:</span> {new Date(sig.signerCertificate.notAfter).toLocaleDateString('tr-TR')}</p>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Zaman Damgaları */}
+                {sig.timestamps && sig.timestamps.length > 0 && (
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-xs font-medium text-foreground/60 mb-2">
+                      Zaman Damgaları ({sig.timestamps.length} adet)
+                    </p>
+                    <div className="space-y-2">
+                      {sig.timestamps.map((ts, tsIdx) => (
+                        <div key={tsIdx} className="rounded-lg border border-border bg-muted/20 p-2 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium">Zaman Damgası #{tsIdx + 1}</span>
+                            <Badge variant={ts.valid ? 'default' : 'destructive'} className="text-xs">
+                              {ts.valid ? 'Geçerli' : 'Geçersiz'}
+                            </Badge>
+                          </div>
+                          {ts.timestampType && (
+                            <p className="text-xs"><span className="text-foreground/60">Tip:</span> {ts.timestampType}</p>
+                          )}
+                          {ts.timestampTime && (
+                            <p className="text-xs">
+                              <span className="text-foreground/60">Zaman:</span>{' '}
+                              {new Date(ts.timestampTime).toLocaleString('tr-TR')}
+                            </p>
+                          )}
+                          {ts.tsaName && (
+                            <p className="text-xs"><span className="text-foreground/60">TSA:</span> {ts.tsaName}</p>
+                          )}
+                          {ts.digestAlgorithm && (
+                            <p className="text-xs"><span className="text-foreground/60">Algoritma:</span> {ts.digestAlgorithm}</p>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -458,6 +539,7 @@ export function VerifyPage() {
       verifyPDF.reset();
       verifyXML.reset();
       verifyTimestamp.reset();
+      verifyCAdES.reset();
     };
   }, []);
 
@@ -483,6 +565,10 @@ export function VerifyPage() {
               XAdES (XML)
             </Badge>
             <Badge variant="secondary" className="gap-1.5 px-3 py-1">
+              <FileSignature className="h-3.5 w-3.5" />
+              CAdES (.p7s)
+            </Badge>
+            <Badge variant="secondary" className="gap-1.5 px-3 py-1">
               <Clock className="h-3.5 w-3.5" />
               RFC 3161 (Timestamp)
             </Badge>
@@ -495,7 +581,7 @@ export function VerifyPage() {
       </Card>
 
       <Tabs defaultValue="xml" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 h-14">
+        <TabsList className="grid w-full grid-cols-4 h-14">
           <TabsTrigger value="xml" className="gap-2 py-3">
             <FileCode className="h-4 w-4" />
             XML
@@ -503,6 +589,10 @@ export function VerifyPage() {
           <TabsTrigger value="pdf" className="gap-2 py-3">
             <FileText className="h-4 w-4" />
             PDF
+          </TabsTrigger>
+          <TabsTrigger value="cades" className="gap-2 py-3">
+            <FileSignature className="h-4 w-4" />
+            CAdES
           </TabsTrigger>
           <TabsTrigger value="timestamp" className="gap-2 py-3">
             <Clock className="h-4 w-4" />
@@ -734,6 +824,137 @@ export function VerifyPage() {
                       <AlertCircle className="h-3.5 w-3.5 inline mr-1" />
                       <strong>Not:</strong> DSS otomatik olarak imza tipini tespit eder.
                       Detached imza için orijinal dosya belirtmek daha güvenilir sonuçlar verir.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* CAdES Tab */}
+        <TabsContent value="cades" className="mt-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* CAdES Form */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileSignature className="h-5 w-5" />
+                    CAdES Doğrulama
+                  </CardTitle>
+                  <CardDescription>
+                    CAdES imzalı dosyaları (.p7s) doğrulayın
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleCAdESSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cades-file">İmzalı Dosya (.p7s)</Label>
+                      <Input
+                        id="cades-file"
+                        type="file"
+                        accept=".p7s,.p7m"
+                        onChange={(e) => {
+                          setCadesFile(e.target.files?.[0] || null);
+                          setCadesResult(null);
+                        }}
+                        required
+                      />
+                      {cadesFile && (
+                        <p className="text-xs text-muted-foreground">
+                          Seçilen: {cadesFile.name} ({(cadesFile.size / 1024).toFixed(2)} KB)
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="cades-original">Orijinal Dosya (Detached imza için opsiyonel)</Label>
+                      <Input
+                        id="cades-original"
+                        type="file"
+                        onChange={(e) => setCadesOriginalFile(e.target.files?.[0] || null)}
+                      />
+                      {cadesOriginalFile && (
+                        <p className="text-xs text-muted-foreground">
+                          Seçilen: {cadesOriginalFile.name} ({(cadesOriginalFile.size / 1024).toFixed(2)} KB)
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="cades-level">Doğrulama Seviyesi</Label>
+                      <Select value={cadesLevel} onValueChange={(value) => setCadesLevel(value as VerificationLevel)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seviye seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={VerificationLevel.SIMPLE}>Basit (Hızlı)</SelectItem>
+                          <SelectItem value={VerificationLevel.COMPREHENSIVE}>Kapsamlı (Detaylı)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={!cadesFile || verifyCAdES.isPending}
+                    >
+                      {verifyCAdES.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      CAdES Doğrula
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* CAdES Info */}
+            <Card className="border-blue-500/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5 text-blue-500" />
+                  CAdES Doğrulama Hakkında
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <p>
+                    <strong className="text-foreground">CAdES Doğrulama</strong>
+                  </p>
+                  <p>
+                    CAdES (CMS Advanced Electronic Signatures) formatındaki imzaları doğrular.
+                    Audit logları ve diğer metin içeriklerinin imzalarını kontrol eder.
+                  </p>
+                  <div className="mt-3">
+                    <p className="font-medium text-foreground mb-2">Desteklenen Seviyeler:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline">CAdES-BES</Badge>
+                      <Badge variant="outline">CAdES-T</Badge>
+                      <Badge variant="outline">CAdES-C</Badge>
+                      <Badge variant="outline">CAdES-A (LTA)</Badge>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <p className="font-medium text-foreground mb-2">Kontroller:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        İmza Geçerliliği
+                      </Badge>
+                      <Badge variant="outline" className="gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Sertifika Zinciri
+                      </Badge>
+                      <Badge variant="outline" className="gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Zaman Damgası
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                    <p className="text-xs text-blue-900 dark:text-blue-200">
+                      <AlertCircle className="h-3.5 w-3.5 inline mr-1" />
+                      <strong>Not:</strong> Detached imza için orijinal dosyayı da yüklemeniz gerekir.
                     </p>
                   </div>
                 </div>
@@ -1000,6 +1221,52 @@ export function VerifyPage() {
               {/* Content - Scrollable */}
               <div className="flex-1 overflow-y-auto p-6">
                 {renderTimestampResult(timestampResult)}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* CAdES Verification Result Modal */}
+      <Dialog open={cadesDialogOpen} onOpenChange={setCadesDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] [&>button]:hidden p-0 gap-0">
+          {cadesResult && (
+            <div className="flex flex-col max-h-[85vh]">
+              {/* Header - Fixed */}
+              <div className="flex-shrink-0 p-6 border-b relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCadesDialogOpen(false)}
+                  className="absolute right-6 top-6 h-8 w-8 rounded-full z-10"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+
+                <DialogHeader>
+                  <DialogTitle className={`flex items-center gap-2 text-xl pr-12 ${cadesResult.valid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                    {cadesResult.valid ? (
+                      <>
+                        <CheckCircle2 className="h-6 w-6" />
+                        CAdES İmza Geçerli
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-6 w-6" />
+                        CAdES İmza Geçersiz
+                      </>
+                    )}
+                  </DialogTitle>
+                  <DialogDescription className="text-base">
+                    {cadesResult.status}
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
+
+              {/* Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {renderVerificationResult(cadesResult)}
               </div>
             </div>
           )}

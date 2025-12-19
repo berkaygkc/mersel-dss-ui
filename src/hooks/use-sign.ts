@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-import { PadesControllerService, XadesControllerService } from '@/api/generated';
-import type { SignPadesDto, SignXadesDto, SignWsSecurityDto } from '@/api/generated';
+import { PadesControllerService, XadesControllerService, CadesControllerService, HashSignService } from '@/api/generated';
+import type { SignPadesDto, SignXadesDto, SignWsSecurityDto, TimestampType, SignHashRequest, SignHashResponse } from '@/api/generated';
 
 // Configure API client
 import '@/lib/api-config';
@@ -34,6 +34,36 @@ export const useSignSOAP = () => {
     mutationFn: async (data: SignWsSecurityDto) => {
       const blob = await XadesControllerService.signWsSecurity(data);
       return blob;
+    },
+  });
+};
+
+// CAdES Signing
+export interface SignCadesData {
+  content: string;
+  timestampType?: TimestampType;
+  signatureId?: string;
+}
+
+export const useSignCAdES = () => {
+  return useMutation({
+    mutationFn: async (data: SignCadesData) => {
+      const blob = await CadesControllerService.signCades(
+        data.content,
+        data.timestampType || 'signature',
+        data.signatureId
+      );
+      return blob;
+    },
+  });
+};
+
+// Hash Signing
+export const useSignHash = () => {
+  return useMutation({
+    mutationFn: async (data: SignHashRequest): Promise<SignHashResponse> => {
+      const response = await HashSignService.signHash(data);
+      return response;
     },
   });
 };

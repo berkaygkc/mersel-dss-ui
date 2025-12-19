@@ -18,8 +18,10 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { useSignPDF, useSignXML, useSignSOAP, DocumentType } from '@/hooks/use-sign';
-import { Loader2, FileText, FileCode, Mail, CheckCircle2, Info } from 'lucide-react';
+import { useSignPDF, useSignXML, useSignSOAP, useSignCAdES, useSignHash, DocumentType } from '@/hooks/use-sign';
+import type { TimestampType } from '@/api/generated';
+import { Loader2, FileText, FileCode, Mail, CheckCircle2, Info, FileSignature, Hash, Copy } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 
 // Example XML content
@@ -68,9 +70,25 @@ export function SigningPage() {
   const [soapFile, setSoapFile] = useState<File | null>(null);
   const [soap12, setSoap12] = useState(false);
 
+  // CAdES state
+  const [cadesContent, setCadesContent] = useState('');
+  const [cadesTimestampType, setCadesTimestampType] = useState<TimestampType>('signature');
+
+  // Hash Sign state
+  const [hashValue, setHashValue] = useState('');
+  const [hashAlgorithm, setHashAlgorithm] = useState('SHA-256');
+  const [signatureResult, setSignatureResult] = useState<{
+    signatureValue: string;
+    certificate: string;
+    certificateChain: string;
+    signatureAlgorithm: string;
+  } | null>(null);
+
   const signPDF = useSignPDF();
   const signXML = useSignXML();
   const signSOAP = useSignSOAP();
+  const signCAdES = useSignCAdES();
+  const signHash = useSignHash();
 
   // PDF Sign Handler
   const handlePDFSubmit = async (e: React.FormEvent) => {
@@ -178,12 +196,85 @@ export function SigningPage() {
     setSoapFile(file);
   };
 
+  // CAdES Sign Handler
+  const handleCAdESSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cadesContent.trim()) {
+      toast.error('İçerik boş olamaz');
+      return;
+    }
+
+    try {
+      const result = await signCAdES.mutateAsync({
+        content: cadesContent,
+        timestampType: cadesTimestampType,
+      });
+
+      const url = URL.createObjectURL(result);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `signed-cades-${Date.now()}.p7s`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success('CAdES İmzalama Başarılı!', {
+        description: `İçerik başarıyla imzalandı. Zaman damgası: ${cadesTimestampType}`,
+      });
+    } catch (error) {
+      toast.error('CAdES İmzalama Hatası!', {
+        description: (error as any)?.body?.message || (error as any)?.message || 'CAdES imzalama sırasında bir hata oluştu.',
+      });
+    }
+  };
+
+  // Hash Sign Handler
+  const handleHashSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!hashValue.trim()) {
+      toast.error('Hash değeri boş olamaz');
+      return;
+    }
+
+    try {
+      const result = await signHash.mutateAsync({
+        hash: hashValue,
+        hashAlgorithm,
+      });
+
+      setSignatureResult(result);
+
+      toast.success('Hash İmzalama Başarılı!', {
+        description: `Hash başarıyla imzalandı. Algoritma: ${result.signatureAlgorithm}`,
+      });
+    } catch (error) {
+      toast.error('Hash İmzalama Hatası!', {
+        description: (error as any)?.body?.message || (error as any)?.message || 'Hash imzalama sırasında bir hata oluştu.',
+      });
+    }
+  };
+
+  // Load CAdES example
+  const loadCadesExample = () => {
+    setCadesContent(`{"id":"EAA2025000000014","cid":"23a1636a-9ae0-4c30-b3f7-2b9dd622af75","type":"EArchiveSent","account":5278,"timestamp":"2025-12-18T15:05:26.266Z"}`);
+    toast.info('Örnek içerik yüklendi');
+  };
+
+  // Copy to clipboard
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} kopyalandı`);
+  };
+
   // Auto-clear previous state on unmount
   useEffect(() => {
     return () => {
       signPDF.reset();
       signXML.reset();
       signSOAP.reset();
+      signCAdES.reset();
+      signHash.reset();
     };
   }, []);
 
@@ -209,19 +300,23 @@ export function SigningPage() {
               XAdES (XML)
             </Badge>
             <Badge variant="secondary" className="gap-1.5 px-3 py-1">
-              <Mail className="h-3.5 w-3.5" />
-              WS-Security (SOAP)
+              <FileSignature className="h-3.5 w-3.5" />
+              CAdES (.p7s)
             </Badge>
             <Badge variant="secondary" className="gap-1.5 px-3 py-1">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              ETSI Standartları
+              <Hash className="h-3.5 w-3.5" />
+              Hash Sign
+            </Badge>
+            <Badge variant="secondary" className="gap-1.5 px-3 py-1">
+              <Mail className="h-3.5 w-3.5" />
+              WS-Security
             </Badge>
           </div>
         </CardContent>
       </Card>
 
       <Tabs defaultValue="xml" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 h-14">
+        <TabsList className="grid w-full grid-cols-5 h-14">
           <TabsTrigger value="xml" className="gap-2 py-3">
             <FileCode className="h-4 w-4" />
             XML
@@ -229,6 +324,14 @@ export function SigningPage() {
           <TabsTrigger value="pdf" className="gap-2 py-3">
             <FileText className="h-4 w-4" />
             PDF
+          </TabsTrigger>
+          <TabsTrigger value="cades" className="gap-2 py-3">
+            <FileSignature className="h-4 w-4" />
+            CAdES
+          </TabsTrigger>
+          <TabsTrigger value="hash" className="gap-2 py-3">
+            <Hash className="h-4 w-4" />
+            Hash
           </TabsTrigger>
           <TabsTrigger value="soap" className="gap-2 py-3">
             <Mail className="h-4 w-4" />
@@ -425,6 +528,185 @@ export function SigningPage() {
                       <Badge variant="outline">e-Arşiv</Badge>
                       <Badge variant="outline">e-İrsaliye</Badge>
                       <Badge variant="outline">HrXml</Badge>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* CAdES Tab */}
+        <TabsContent value="cades" className="mt-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileSignature className="h-5 w-5" />
+                  CAdES İmzalama
+                </CardTitle>
+                <CardDescription>
+                  Metin içeriğini CAdES formatında imzalayın (.p7s)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCAdESSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="cades-content">İçerik</Label>
+                      <Button type="button" variant="ghost" size="sm" onClick={loadCadesExample}>
+                        Örnek Yükle
+                      </Button>
+                    </div>
+                    <Textarea
+                      id="cades-content"
+                      placeholder="İmzalanacak metin içeriğini buraya yapıştırın..."
+                      value={cadesContent}
+                      onChange={(e) => setCadesContent(e.target.value)}
+                      className="min-h-[150px] font-mono text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Zaman Damgası Türü</Label>
+                    <Select value={cadesTimestampType} onValueChange={(v) => setCadesTimestampType(v as TimestampType)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Yok (CAdES-B)</SelectItem>
+                        <SelectItem value="signature">İmza ZD (CAdES-T)</SelectItem>
+                        <SelectItem value="archive">Arşiv ZD (CAdES-A)</SelectItem>
+                        <SelectItem value="all">Tümü</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={signCAdES.isPending || !cadesContent.trim()}>
+                    {signCAdES.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    CAdES İmzala
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card className="border-blue-500/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5 text-blue-500" />
+                  CAdES Hakkında
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <p><strong className="text-foreground">CAdES (CMS Advanced Electronic Signatures)</strong></p>
+                  <p>Metin içeriğini PKCS#7/CMS formatında imzalar. Audit logları ve diğer metin verilerinin imzalanması için idealdir.</p>
+                  <div className="mt-3">
+                    <p className="font-medium text-foreground mb-2">Zaman Damgası Seviyeleri:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline">CAdES-B (Temel)</Badge>
+                      <Badge variant="outline">CAdES-T (İmza ZD)</Badge>
+                      <Badge variant="outline">CAdES-A (Arşiv ZD)</Badge>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Hash Tab */}
+        <TabsContent value="hash" className="mt-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Hash className="h-5 w-5" />
+                  Hash İmzalama
+                </CardTitle>
+                <CardDescription>
+                  Client tarafında hesaplanan hash değerini imzalayın
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleHashSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="hash-value">Hash Değeri (Base64)</Label>
+                    <Textarea
+                      id="hash-value"
+                      placeholder="Base64 encoded hash değerini buraya yapıştırın..."
+                      value={hashValue}
+                      onChange={(e) => setHashValue(e.target.value)}
+                      className="min-h-[80px] font-mono text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Hash Algoritması</Label>
+                    <Select value={hashAlgorithm} onValueChange={setHashAlgorithm}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SHA-256">SHA-256 (Önerilen)</SelectItem>
+                        <SelectItem value="SHA-384">SHA-384</SelectItem>
+                        <SelectItem value="SHA-512">SHA-512</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={signHash.isPending || !hashValue.trim()}>
+                    {signHash.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Hash İmzala
+                  </Button>
+                </form>
+
+                {signatureResult && (
+                  <div className="mt-4 space-y-3 pt-4 border-t">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="default">Başarılı</Badge>
+                      <span className="text-xs text-muted-foreground">{signatureResult.signatureAlgorithm}</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">İmza Değeri</Label>
+                        <Button variant="ghost" size="sm" onClick={() => copyToClipboard(signatureResult.signatureValue, 'İmza değeri')}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <Textarea value={signatureResult.signatureValue} readOnly className="min-h-[60px] font-mono text-xs" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">Sertifika (Base64)</Label>
+                        <Button variant="ghost" size="sm" onClick={() => copyToClipboard(signatureResult.certificate, 'Sertifika')}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <Textarea value={signatureResult.certificate} readOnly className="min-h-[60px] font-mono text-xs" />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-blue-500/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5 text-blue-500" />
+                  Hash İmzalama Hakkında
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <p><strong className="text-foreground">Hash İmzalama (Remote Signing)</strong></p>
+                  <p>Client tarafında hesaplanan hash değerini imzalar. XAdES remote signing ve benzeri senaryolar için idealdir.</p>
+                  <div className="mt-3">
+                    <p className="font-medium text-foreground mb-2">Dönen Değerler:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline">İmza Değeri</Badge>
+                      <Badge variant="outline">Sertifika</Badge>
+                      <Badge variant="outline">Sertifika Zinciri</Badge>
                     </div>
                   </div>
                 </div>
